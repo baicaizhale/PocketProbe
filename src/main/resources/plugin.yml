@@ -1,0 +1,42 @@
+# This is the main configuration file for your Spigot plugin.
+# It tells the Spigot server essential information about your plugin.
+
+# The name of your plugin. This should match your artifactId in pom.xml.
+name: PocketProbe
+
+# The version of your plugin. It's good practice to update this as you make changes.
+version: 1.0.0
+
+# The main class of your plugin. This is the entry point that Spigot loads.
+# It must be in the format: <package_name>.<main_class_name>
+main: org.YanPl.pocketProbe.PocketProbe
+
+# The API version your plugin is built against.
+# This helps Spigot ensure compatibility. For your 1.20.4 dependency, 1.20 is appropriate.
+api-version: 1.20
+
+# Defines the commands your plugin will handle.
+commands:
+  # The command name (e.g., /pocketprobe)
+  pocketprobe:
+    # A short description of what the command does.
+    description: Opens another player's inventory for inspection and editing.
+    # How to use the command, displayed if usage is incorrect.
+    usage: /<command> <player_name>
+    # The permission required to use this command.
+    permission: pocketprobe.use
+    # The message shown if a player tries to use the command without permission.
+    permission-message: You do not have permission to use this command.
+
+# Defines the permissions used by your plugin.
+permissions:
+  # The specific permission node.
+  pocketprobe.use:
+    # A description for server administrators.
+    description: Allows players to use the /pocketprobe command to view and edit inventories.
+    # The default access level for this permission:
+    # - op: Only server operators can use it by default.
+    # - true: Everyone has it by default.
+    # - false: No one has it by default.
+    # - not-op: Everyone except operators has it by default.
+    default: op
