@@ -1,6 +1,7 @@
 package org.YanPl.pocketProbe;
 
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bstats.bukkit.Metrics; // 导入 bStats Metrics 类
 
 import java.util.Objects;
 
@@ -18,6 +19,11 @@ public final class PocketProbe extends JavaPlugin {
         // Log a message to the server console to indicate that the plugin has started.
         // getLogger() provides a standard way to log messages in Spigot.
         getLogger().info("PocketProbe has been enabled!");
+
+        // 初始化 bStats 统计服务
+        int pluginId = 26275; // 替换为你的插件的实际 bStats ID
+        Metrics metrics = new Metrics(this, pluginId);
+
 
         // 创建命令执行器的实例
         PocketProbeCommand commandExecutor = new PocketProbeCommand();
