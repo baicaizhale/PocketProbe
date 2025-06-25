@@ -5,7 +5,7 @@
 name: PocketProbe
 
 # The version of your plugin. It's good practice to update this as you make changes.
-version: 1.0.0
+version: 1.1.0
 
 # The main class of your plugin. This is the entry point that Spigot loads.
 # It must be in the format: <package_name>.<main_class_name>
@@ -27,6 +27,9 @@ commands:
     permission: pocketprobe.use
     # The message shown if a player tries to use the command without permission.
     permission-message: You do not have permission to use this command.
+    # <<<<<<<<<<<<<<<< 新增的别名行 >>>>>>>>>>>>>>>>>
+    aliases: [pp] # 添加 'pp' 作为 'pocketprobe' 的别名
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 # Defines the permissions used by your plugin.
 permissions:
