@@ -1,12 +1,12 @@
 package org.YanPl.pocketProbe;
 
-import org.bukkit.inventory.Inventory; // 导入 Inventory 类
-import org.bukkit.entity.Player; // 导入 Player 类
+import org.bukkit.inventory.Inventory;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bstats.bukkit.Metrics;
 
-import java.util.HashMap; // 导入 HashMap
-import java.util.Map; // 导入 Map
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -18,9 +18,9 @@ public final class PocketProbe extends JavaPlugin {
     // 存储当前插件的唯一实例，方便其他类访问
     private static PocketProbe instance;
 
-    // 存储已打开的自定义背包及其对应的目标玩家。
-    // key: 自定义背包实例, value: 被查看背包的玩家实例
-    private final Map<Inventory, Player> openedProbeInventories = new HashMap<>();
+    // 存储已打开的探查会话。
+    // key: 自定义背包实例, value: ProbeSession 对象 (包含目标玩家、查看者和刷新任务)
+    private final Map<Inventory, ProbeSession> openedProbeSessions = new HashMap<>();
 
     /**
      * 获取插件的唯一实例。
@@ -31,11 +31,11 @@ public final class PocketProbe extends JavaPlugin {
     }
 
     /**
-     * 获取存储已打开自定义背包的 Map。
-     * @return 存储自定义背包和目标玩家的 Map
+     * 获取存储已打开探查会话的 Map。
+     * @return 存储自定义背包和 ProbeSession 的 Map
      */
-    public Map<Inventory, Player> getOpenedProbeInventories() {
-        return openedProbeInventories;
+    public Map<Inventory, ProbeSession> getOpenedProbeSessions() {
+        return openedProbeSessions;
     }
 
     /**
@@ -68,9 +68,19 @@ public final class PocketProbe extends JavaPlugin {
 
     /**
      * This method is called when the plugin is disabled (i.e., when the server stops or the plugin is unloaded).
+     * 在插件禁用时，确保停止所有正在运行的实时更新任务，避免资源泄露。
      */
     @Override
     public void onDisable() {
+        // 遍历所有打开的探查会话，并取消其刷新任务
+        for (ProbeSession session : openedProbeSessions.values()) {
+            if (session.getRefreshTask() != null) {
+                session.getRefreshTask().cancel();
+            }
+        }
+        // 清空 Map
+        openedProbeSessions.clear();
+
         // Plugin shutdown logic
         getLogger().info("PocketProbe has been disabled!");
     }

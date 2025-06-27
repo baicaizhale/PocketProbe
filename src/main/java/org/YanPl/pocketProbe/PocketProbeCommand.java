@@ -2,7 +2,7 @@ package org.YanPl.pocketProbe;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Material; // 导入 Material 类
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -11,11 +11,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.inventory.meta.ItemMeta; // 确保导入 ItemMeta
+import org.bukkit.inventory.meta.ItemMeta;
 
 
 import java.util.ArrayList;
-// import java.util.Arrays; // 移除未使用的导入
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -107,14 +106,14 @@ public class PocketProbeCommand implements CommandExecutor, TabCompleter {
         }
 
         // 优化填充物放置逻辑，避免重复代码段
-        // 修正：移除了 36-44 槽位，因为它们应该显示玩家主物品栏的第三行内容。
         int[] fillerSlots = {4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17};
         for (int slot : fillerSlots) {
             probeInventory.setItem(slot, filler);
         }
 
-        // 将自定义背包和目标玩家关联起来，以便在背包关闭时进行同步
-        plugin.getOpenedProbeInventories().put(probeInventory, targetPlayer);
+        // 修复: 创建 ProbeSession 实例并使用 getOpenedProbeSessions() 方法
+        ProbeSession session = new ProbeSession(targetPlayer, probeInventory, player);
+        plugin.getOpenedProbeSessions().put(probeInventory, session);
 
         // 打开自定义背包给执行命令的玩家
         player.openInventory(probeInventory);
@@ -139,7 +138,6 @@ public class PocketProbeCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
-            // 使用 toList() 替换 collect(Collectors.toList())
             List<String> playerNames = Bukkit.getOnlinePlayers().stream()
                     .map(Player::getName)
                     .toList();
