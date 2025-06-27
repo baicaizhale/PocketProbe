@@ -2,22 +2,35 @@ package org.YanPl.pocketProbe;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material; // 导入 Material 类
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter; // 导入 TabCompleter 接口
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.ItemMeta; // 确保导入 ItemMeta
 
-import java.util.ArrayList; // 导入 ArrayList
-import java.util.List; // 导入 List
-import java.util.stream.Collectors; // 导入 Collectors
+
+import java.util.ArrayList;
+// import java.util.Arrays; // 移除未使用的导入
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * This class handles the /pocketprobe command and provides tab completion for player names.
  * It implements CommandExecutor for command handling and TabCompleter for tab completion.
  */
-public class PocketProbeCommand implements CommandExecutor, TabCompleter { // 实现 TabCompleter 接口
+public class PocketProbeCommand implements CommandExecutor, TabCompleter {
+
+    private final PocketProbe plugin; // 存储插件实例
+
+    // 构造函数，接收插件实例
+    public PocketProbeCommand(PocketProbe plugin) {
+        this.plugin = plugin;
+    }
 
     /**
      * This method is called whenever the registered command (in this case, /pocketprobe or /pp) is executed.
@@ -30,59 +43,84 @@ public class PocketProbeCommand implements CommandExecutor, TabCompleter { // �
      */
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        // 1. Check if the command sender is a player.
-        // The plugin's functionality involves opening an inventory, which only players can do.
-        if (!(sender instanceof Player)) {
+        // 1. Check if the command sender is a player，并使用模式变量 'player'
+        if (!(sender instanceof Player player)) {
             sender.sendMessage(ChatColor.RED + "Only players can use this command.");
-            // Return true to indicate the command was handled, even if it failed due to wrong sender type.
             return true;
         }
 
-        // Cast the sender to a Player object for player-specific operations.
-        Player player = (Player) sender;
-
         // 2. Check if the player has the necessary permission.
-        // Permissions are defined in plugin.yml and can be managed by server admins.
         if (!player.hasPermission("pocketprobe.use")) {
-            player.sendMessage(ChatColor.RED + "You do not have permission to use this command.");
+            player.sendMessage(ChatColor.RED + "你没有权限使用此命令。");
             return true;
         }
 
         // 3. Validate command arguments.
-        // We expect one argument: the target player's name.
         if (args.length == 0) {
-            // If no arguments are provided, send a usage message.
-            player.sendMessage(ChatColor.YELLOW + "Usage: /" + label + " <player_name>"); // 使用 label 确保提示正确
+            player.sendMessage(ChatColor.YELLOW + "用法: /" + label + " <玩家名>");
             return true;
         }
 
-        // Get the target player's name from the first argument.
         String targetPlayerName = args[0];
 
         // 4. Find the target player.
-        // Bukkit.getPlayerExact(name) tries to find an online player with the exact given name.
-        // This is generally preferred for commands that require an active player.
         Player targetPlayer = Bukkit.getPlayerExact(targetPlayerName);
 
         // 5. Check if the target player is online and exists.
         if (targetPlayer == null || !targetPlayer.isOnline()) {
-            player.sendMessage(ChatColor.RED + "Player '" + targetPlayerName + "' is not online or does not exist.");
+            player.sendMessage(ChatColor.RED + "玩家 '" + targetPlayerName + "' 不在线或不存在。");
             return true;
         }
 
-        // 6. Get the target player's inventory.
-        // Player.getInventory() returns the PlayerInventory object for the player.
-        Inventory targetInventory = targetPlayer.getInventory();
+        // 创建一个 9x6 (54格) 的自定义背包，用于显示所有物品
+        Inventory probeInventory = Bukkit.createInventory(null, 54, ChatColor.AQUA + "查看 " + targetPlayer.getName() + " 的背包");
 
-        // 7. Open the target inventory for the command sender.
-        // This is the core functionality: the sender will see and be able to interact with
-        // the target player's inventory as if it were their own. Changes made here will affect the target player.
-        player.openInventory(targetInventory);
+        PlayerInventory targetInv = targetPlayer.getInventory();
 
-        // 8. Send a success message to the command sender.
-        player.sendMessage(ChatColor.GREEN + "Opened " + targetPlayer.getName() + "'s inventory.");
+        // 填充主物品栏 (27格) 和热启动栏 (9格)，共 36 格
+        ItemStack[] storageContents = targetInv.getStorageContents();
+        for (int i = 0; i < storageContents.length; i++) {
+            // 0-8 是热启动栏，9-35 是主物品栏。
+            // 我们希望在自定义 GUI 中，热启动栏在最下面 (45-53)，主物品栏在上面 (18-44)。
+            if (i <= 8) { // 热启动栏 (玩家背包槽位 0-8 -> 自定义背包槽位 45-53)
+                probeInventory.setItem(45 + i, storageContents[i]);
+            } else { // 主物品栏 (玩家背包槽位 9-35 -> 自定义背包槽位 18-44)
+                probeInventory.setItem(18 + (i - 9), storageContents[i]);
+            }
+        }
 
-        // Return true to indicate that the command was successfully processed.
+        // 放置盔甲栏 (自定义背包顶部 4 格)
+        probeInventory.setItem(0, targetInv.getHelmet());      // 头盔
+        probeInventory.setItem(1, targetInv.getChestplate());  // 胸甲
+        probeInventory.setItem(2, targetInv.getLeggings());    // 护腿
+        probeInventory.setItem(3, targetInv.getBoots());       // 靴子
+
+        // 放置副手 (自定义背包右上方槽位 8)
+        probeInventory.setItem(8, targetInv.getItemInOffHand()); // 副手
+
+        // 填充空槽位，使其看起来更整洁
+        ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemMeta fillerMeta = filler.getItemMeta();
+        if (fillerMeta != null) {
+            fillerMeta.setDisplayName(ChatColor.DARK_GRAY + " "); // 设置为空名称以隐藏物品名
+            filler.setItemMeta(fillerMeta);
+        }
+
+        // 优化填充物放置逻辑，避免重复代码段
+        // 修正：移除了 36-44 槽位，因为它们应该显示玩家主物品栏的第三行内容。
+        int[] fillerSlots = {4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17};
+        for (int slot : fillerSlots) {
+            probeInventory.setItem(slot, filler);
+        }
+
+        // 将自定义背包和目标玩家关联起来，以便在背包关闭时进行同步
+        plugin.getOpenedProbeInventories().put(probeInventory, targetPlayer);
+
+        // 打开自定义背包给执行命令的玩家
+        player.openInventory(probeInventory);
+
+        player.sendMessage(ChatColor.GREEN + "已打开 " + targetPlayer.getName() + " 的背包。");
+
         return true;
     }
 
@@ -98,26 +136,20 @@ public class PocketProbeCommand implements CommandExecutor, TabCompleter { // �
      */
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        // Create an empty list to store suggestions.
         List<String> completions = new ArrayList<>();
 
-        // We only care about tab completion for the first argument (player name).
         if (args.length == 1) {
-            // Get all online player names.
+            // 使用 toList() 替换 collect(Collectors.toList())
             List<String> playerNames = Bukkit.getOnlinePlayers().stream()
-                    .map(Player::getName) // Map Player objects to their names (Strings)
-                    .collect(Collectors.toList()); // Collect them into a List
+                    .map(Player::getName)
+                    .toList();
 
-            // Filter player names based on what the user has typed so far (args[0]).
-            // This makes the tab completion dynamic.
             for (String playerName : playerNames) {
                 if (playerName.toLowerCase().startsWith(args[0].toLowerCase())) {
                     completions.add(playerName);
                 }
             }
         }
-        // If args.length is not 1 (e.g., no arguments or more than one), return an empty list,
-        // meaning no suggestions are provided by this plugin.
         return completions;
     }
 }

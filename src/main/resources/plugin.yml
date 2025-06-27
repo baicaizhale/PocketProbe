@@ -5,7 +5,7 @@
 name: PocketProbe
 
 # The version of your plugin. It's good practice to update this as you make changes.
-version: 1.3.0 # 版本号已更新为 1.3.0
+version: 1.4.2
 
 # The main class of your plugin. This is the entry point that Spigot loads.
 # It must be in the format: <package_name>.<main_class_name>
@@ -13,7 +13,7 @@ main: org.YanPl.pocketProbe.PocketProbe
 
 # The API version your plugin is built against.
 # This helps Spigot ensure compatibility. For your 1.20.4 dependency, 1.20 is appropriate.
-api-version: 1.16 # API 版本已更新为 1.16，用于更广泛的兼容性
+api-version: 1.18
 
 # Defines the commands your plugin will handle.
 commands:
