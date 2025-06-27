@@ -1,7 +1,7 @@
 package org.YanPl.pocketProbe;
 
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bstats.bukkit.Metrics; // 导入 bStats Metrics 类
+import org.bstats.bukkit.Metrics; // Import bStats Metrics class
 
 import java.util.Objects;
 
@@ -17,27 +17,26 @@ public final class PocketProbe extends JavaPlugin {
     @Override
     public void onEnable() {
         // Log a message to the server console to indicate that the plugin has started.
-        // getLogger() provides a standard way to log messages in Spigot.
         getLogger().info("PocketProbe has been enabled!");
 
-        // 初始化 bStats 统计服务
-        int pluginId = 26275; // 替换为你的插件的实际 bStats ID
+        // Initialize bStats statistics service
+        int pluginId = 26275; // Replace with your plugin's actual bStats ID
         Metrics metrics = new Metrics(this, pluginId);
 
-
-        // 创建命令执行器的实例
+        // Create an instance of the command executor.
         PocketProbeCommand commandExecutor = new PocketProbeCommand();
 
-        // 注册命令执行器 for the "pocketprobe" command
-        // 当玩家输入 "/pocketprobe" 或 "/pp" 时，PocketProbeCommand 的 onCommand 方法会被调用。
+        // Register the command executor for the "pocketprobe" command.
         Objects.requireNonNull(this.getCommand("pocketprobe")).setExecutor(commandExecutor);
 
-        // <<<<<<<<<<<<<<<< 新增的 Tab Completer 注册行 >>>>>>>>>>>>>>>>>
-        // 注册 Tab 补全器 for the "pocketprobe" command
-        // 当玩家输入 "/pocketprobe " 或 "/pp " 后按 Tab 键时，PocketProbeCommand 的 onTabComplete 方法会被调用。
+        // Register the Tab Completer for the "pocketprobe" command.
         Objects.requireNonNull(this.getCommand("pocketprobe")).setTabCompleter(commandExecutor);
-        // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+        // <<<<<<<<<<<<<<<< 新增事件监听器注册 >>>>>>>>>>>>>>>>>
+        // Register the event listener so the plugin can respond to player interaction events.
+        // 'this' refers to the current plugin instance, and PocketProbeListener is the class that handles the events.
+        getServer().getPluginManager().registerEvents(new PocketProbeListener(), this);
+        // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     }
 
     /**
