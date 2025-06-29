@@ -12,8 +12,6 @@ import org.bstats.bukkit.Metrics;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-// 关键修复：添加 ProbeSession 类的导入
-import org.YanPl.pocketProbe.ProbeSession;
 
 /**
  * The main class for the PocketProbe Spigot plugin.
@@ -104,6 +102,7 @@ public final class PocketProbe extends JavaPlugin {
             @Override
             public void run() {
                 // 如果目标玩家不在线，或者查看者不再查看此背包，则取消任务
+                // 添加对 viewerPlayer.getOpenInventory() 的 null 检查，以避免 NPE
                 if (!targetPlayer.isOnline() || viewerPlayer.getOpenInventory() == null || viewerPlayer.getOpenInventory().getTopInventory() != probeInventory) {
                     this.cancel();
                     // 如果任务被取消，确保从 Map 中移除会话
@@ -132,17 +131,21 @@ public final class PocketProbe extends JavaPlugin {
                         updateSlot(probeInventory, latestStorageContents[i], 18 + (i - 9));
                     }
                 }
+
+                // 关键修复：强制查看者刷新其客户端的背包界面
+                viewerPlayer.updateInventory();
             }
 
             // 辅助方法：仅在物品不同时才更新槽位，减少不必要的更新
             private void updateSlot(Inventory inv, ItemStack newItem, int slot) {
                 ItemStack currentItem = inv.getItem(slot);
+                // 使用 Objects.equals 避免 null 比较问题
                 if (!Objects.equals(currentItem, newItem)) {
                     inv.setItem(slot, newItem);
                 }
             }
 
-        }.runTaskTimer(this, 0L, 2L); // 'this' 指的是 PocketProbe 实例
+        }.runTaskTimer(this, 0L, 2L); // 0L: 立即开始, 2L: 每 2 tick 执行一次 (0.1秒)
 
         // 将任务关联到会话
         session.setRefreshTask(refreshTask);

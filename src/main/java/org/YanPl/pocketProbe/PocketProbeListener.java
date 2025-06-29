@@ -159,8 +159,6 @@ public class PocketProbeListener implements Listener {
             targetInv.setStorageContents(newStorageContents);
 
             // Ensure the player's inventory is updated.
-            // Note: The updateInventory() method might have an @ApiStatus.Internal tag,
-            // indicating it's an internal API that could change in future versions, but it's generally safe to use for now.
             targetPlayer.updateInventory();
 
             // Optionally send a message to the player who opened the inventory.
@@ -194,12 +192,10 @@ public class PocketProbeListener implements Listener {
             if (isFillerSlot) {
                 // Prevent players from picking up filler items or placing other items into filler slots.
                 // Prevent picking up filler.
-                // Added null check for currentOpenInventory.getItem(slot)
                 if (currentOpenInventory.getItem(slot) != null && currentOpenInventory.getItem(slot).getType() == Material.GRAY_STAINED_GLASS_PANE) {
                     event.setCancelled(true);
                 }
                 // Prevent placing items into filler slots (if there's an item on the cursor and it's not air).
-                // Added null check for event.getCursor()
                 if (event.getCursor() != null && event.getCursor().getType() != Material.AIR) {
                     event.setCancelled(true);
                 }
