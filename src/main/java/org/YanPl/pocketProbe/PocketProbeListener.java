@@ -1,8 +1,8 @@
 package org.YanPl.pocketProbe;
 
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
+import org.bukkit.Bukkit; // Added for Bukkit.getScheduler
+import org.bukkit.ChatColor; // Added for ChatColor.RED, ChatColor.GREEN
+import org.bukkit.Material; // Added for Material.GRAY_STAINED_GLASS_PANE
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -13,13 +13,11 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.inventory.meta.ItemMeta; // Added for ItemMeta
+import org.bukkit.scheduler.BukkitTask; // Added for BukkitTask
 
-import java.util.Map;
-import java.util.Objects;
-
+import java.util.Map; // Added for Map
+import java.util.Objects; // Added for Objects.requireNonNull (if used), Objects.equals
 
 /**
  * 此类监听玩家事件，特别是右键点击其他实体（玩家）和自定义探查背包的关闭事件。
@@ -39,7 +37,7 @@ public class PocketProbeListener implements Listener {
         }
 
         // 2. 确保被右键点击的实体是玩家，并使用模式变量 'targetPlayer'。
-        if (!(event.getRightClicked() instanceof Player targetPlayer)) {
+        if (!(event.getRightClicked() instanceof Player targetPlayer)) { // 修复: 'targetPlayer' 模式变量警告
             return; // 如果不是玩家，则不处理。
         }
 

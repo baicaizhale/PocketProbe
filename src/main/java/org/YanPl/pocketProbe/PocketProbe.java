@@ -1,9 +1,13 @@
 package org.YanPl.pocketProbe;
 
+import org.bukkit.Bukkit; // Added for Bukkit.getScheduler().runTaskLater, etc.
+import org.bukkit.ChatColor; // Added for ChatColor.AQUA, ChatColor.DARK_GRAY
+import org.bukkit.Material;   // Added for Material.GRAY_STAINED_GLASS_PANE
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.ItemMeta; // Added for ItemMeta
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -12,7 +16,6 @@ import org.bstats.bukkit.Metrics;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.YanPl.pocketProbe.ProbeSession;
 
 /**
  * PocketProbe Spigot 插件的主类。
@@ -149,6 +152,7 @@ public final class PocketProbe extends JavaPlugin {
                     // 只有当该槽位目前是空的，或者已经被填充物占据时，才重新填充
                     // 这避免了覆盖玩家在探查界面中可能放置的物品
                     ItemStack currentProbeItem = probeInventory.getItem(slot);
+                    // 检查 currentProbeItem 是否为 null，以防止 NPE
                     if (currentProbeItem == null || (currentProbeItem.getType() == Material.GRAY_STAINED_GLASS_PANE && Objects.equals(currentProbeItem.getItemMeta(), fillerMeta))) {
                         newProbeContents[slot] = filler;
                     } else {

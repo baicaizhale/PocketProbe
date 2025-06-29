@@ -1,8 +1,7 @@
 package org.YanPl.pocketProbe;
 
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
+import org.bukkit.Bukkit; // Added for Bukkit.getPlayerExact, Bukkit.getOnlinePlayers, Bukkit.createInventory
+import org.bukkit.ChatColor; // Added for ChatColor.AQUA, ChatColor.YELLOW, ChatColor.RED, ChatColor.GREEN, ChatColor.DARK_GRAY
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -11,11 +10,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.inventory.meta.ItemMeta;
-
+import org.bukkit.inventory.meta.ItemMeta; // Added for ItemMeta
+import org.bukkit.Material; // 关键修复：确保 Material 类被导入
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
