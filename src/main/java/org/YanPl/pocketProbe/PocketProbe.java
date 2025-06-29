@@ -12,7 +12,7 @@ import org.bstats.bukkit.Metrics;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.YanPl.pocketProbe.ProbeSession; // 导入 ProbeSession
+import org.YanPl.pocketProbe.ProbeSession;
 
 /**
  * PocketProbe Spigot 插件的主类。
@@ -103,7 +103,7 @@ public final class PocketProbe extends JavaPlugin {
             @Override
             public void run() {
                 // 如果目标玩家不在线，或者查看者不再查看此背包，则取消任务
-                // 添加对 viewerPlayer.getOpenInventory() 的 null 检查，以避免 NPE
+                // 添加对 viewerPlayer.getOpenInventory() 的 null 检查，以避免空指针异常
                 if (!targetPlayer.isOnline() || viewerPlayer.getOpenInventory() == null || viewerPlayer.getOpenInventory().getTopInventory() != probeInventory) {
                     this.cancel();
                     // 如果任务被取消，确保从 Map 中移除会话
@@ -133,13 +133,17 @@ public final class PocketProbe extends JavaPlugin {
                     }
                 }
 
-                // 关键修复：强制查看者刷新其客户端的背包界面
+                // 强制查看者刷新其客户端的背包界面，以确保最及时的显示。
                 viewerPlayer.updateInventory();
             }
 
-            // 辅助方法：仅在物品不同时才更新槽位，减少不必要的更新
-            // 为了更强的“实时”感知，即使 Objects.equals 为 true，也强制设置一次，
-            // 确保客户端刷新，特别是NBT数据可能变化的物品。
+            /**
+             * 辅助方法：更新指定槽位的物品。
+             * 直接设置物品，以确保最及时的客户端刷新，特别是NBT数据可能变化的物品。
+             * @param inv 要更新的背包。
+             * @param newItem 新的物品堆。
+             * @param slot 要更新的槽位。
+             */
             private void updateSlot(Inventory inv, ItemStack newItem, int slot) {
                 // 不再进行 Objects.equals 检查，直接设置，以确保最及时的客户端刷新。
                 // 这种做法可能会增加一些不必要的网络流量，但能确保客户端看到最新状态。

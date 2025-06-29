@@ -90,8 +90,6 @@ public class PocketProbeListener implements Listener {
         }
 
         // 优化填充物放置逻辑，避免重复代码段。
-        // 修正：移除了 36-44 槽位，因为它们应该显示玩家主物品栏的第三行内容。
-        // 现在只填充盔甲和副手之间的空隙 (4-7) 以及第二行 (9-17) 的空隙。
         int[] fillerSlots = {4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17};
         for (int slot : fillerSlots) {
             probeInventory.setItem(slot, filler);
@@ -127,8 +125,7 @@ public class PocketProbeListener implements Listener {
 
         if (openedSessions.containsKey(closedInventory)) {
             ProbeSession session = openedSessions.get(closedInventory);
-            // 修复：将 getTargetTargetPlayer() 改为 getTargetPlayer()
-            Player targetPlayer = session.getTargetPlayer();
+            Player targetPlayer = session.getTargetPlayer(); // 修复：确保调用的是 getTargetPlayer()
             PlayerInventory targetInv = targetPlayer.getInventory();
 
             // <<<<<<<<<<<<<<<<<<<<<<<<<<<< 取消实时更新任务 >>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -170,16 +167,19 @@ public class PocketProbeListener implements Listener {
 
     /**
      * 防止玩家在探查背包中移动或拿起填充物。
+     * 同时实现操作者在探查背包中的操作实时同步到目标玩家的实际背包。
      * @param event 背包点击事件。
      */
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         Map<Inventory, ProbeSession> openedSessions = PocketProbe.getInstance().getOpenedProbeSessions();
-        Inventory currentOpenInventory = event.getInventory();
+        Inventory clickedInventory = event.getClickedInventory(); // 获取被点击的背包
 
-        // 只有当当前打开的背包是我们自定义的探查背包时才进行处理。
-        if (openedSessions.containsKey(currentOpenInventory)) {
+        // 只有当点击的背包是我们自定义的探查背包时才进行处理。
+        if (clickedInventory != null && openedSessions.containsKey(clickedInventory)) {
             int slot = event.getRawSlot(); // 获取点击的原始槽位。
+            ProbeSession session = openedSessions.get(clickedInventory);
+            Player targetPlayer = session.getTargetPlayer(); // 获取目标玩家
 
             // 检查点击的槽位是否是填充物槽位 (4-7, 9-17)。
             int[] fillerSlots = {4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17};
@@ -193,14 +193,38 @@ public class PocketProbeListener implements Listener {
 
             if (isFillerSlot) {
                 // 阻止玩家捡起填充物或将其他物品放入填充物槽位。
-                // 阻止拿起填充物。
-                if (currentOpenInventory.getItem(slot) != null && currentOpenInventory.getItem(slot).getType() == Material.GRAY_STAINED_GLASS_PANE) {
-                    event.setCancelled(true);
-                }
-                // 阻止放置物品到填充物槽位（如果光标上有物品且不是空气）。
-                if (event.getCursor() != null && event.getCursor().getType() != Material.AIR) {
-                    event.setCancelled(true);
-                }
+                event.setCancelled(true);
+            } else {
+                // ****** 关键修复：实时同步操作者在探查背包中的操作到目标玩家的实际背包 ******
+                // 这个逻辑会在操作者点击/拖动物品时立即尝试同步。
+                // 延迟执行以确保 Bukkit 自己的 InventoryClickEvent 处理完成后，再获取并同步最新状态。
+                Bukkit.getScheduler().runTaskLater(PocketProbe.getInstance(), () -> {
+                    // 再次检查会话是否存在，以防在延迟执行期间背包被关闭。
+                    if (!targetPlayer.isOnline() || !openedSessions.containsKey(clickedInventory)) {
+                        return;
+                    }
+
+                    PlayerInventory targetInv = targetPlayer.getInventory();
+                    ItemStack currentItemInProbe = clickedInventory.getItem(slot);
+
+                    // 根据槽位类型进行同步
+                    if (slot >= 0 && slot <= 3) { // 盔甲槽
+                        if (slot == 0) targetInv.setHelmet(currentItemInProbe);
+                        else if (slot == 1) targetInv.setChestplate(currentItemInProbe);
+                        else if (slot == 2) targetInv.setLeggings(currentItemInProbe);
+                        else if (slot == 3) targetInv.setBoots(currentItemInProbe);
+                    } else if (slot == 8) { // 副手槽
+                        targetInv.setItemInOffHand(currentItemInProbe);
+                    } else if (slot >= 18 && slot <= 44) { // 主物品栏 (对应玩家背包槽位 9-35)
+                        targetInv.setItem(slot - 18 + 9, currentItemInProbe);
+                    } else if (slot >= 45 && slot <= 53) { // 热启动栏 (对应玩家背包槽位 0-8)
+                        targetInv.setItem(slot - 45, currentItemInProbe);
+                    }
+
+                    // 强制更新目标玩家的客户端背包显示
+                    targetPlayer.updateInventory();
+
+                }, 1L); // 延迟 1 tick 执行，确保 Spigot 内部的点击处理完成。
             }
         }
     }
