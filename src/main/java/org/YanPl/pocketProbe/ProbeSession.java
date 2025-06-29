@@ -5,9 +5,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.scheduler.BukkitTask;
 
 /**
- * Represents an active PocketProbe inventory viewing session.
- * Stores references to the target player, the custom probe inventory,
- * the viewer player, and the associated refresh task.
+ * 表示一个活动的 PocketProbe 背包查看会话。
+ * 存储对目标玩家、自定义探查背包、查看者玩家以及相关刷新任务的引用。
  */
 public class ProbeSession {
     private final Player targetPlayer;  // 被查看背包的玩家

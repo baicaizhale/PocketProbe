@@ -12,10 +12,11 @@ import org.bstats.bukkit.Metrics;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import org.YanPl.pocketProbe.ProbeSession; // 导入 ProbeSession
 
 /**
- * The main class for the PocketProbe Spigot plugin.
- * This class extends JavaPlugin, which is the base class for all Spigot plugins.
+ * PocketProbe Spigot 插件的主类。
+ * 此类继承自 JavaPlugin，它是所有 Spigot 插件的基础类。
  */
 public final class PocketProbe extends JavaPlugin {
 
@@ -23,7 +24,7 @@ public final class PocketProbe extends JavaPlugin {
     private static PocketProbe instance;
 
     // 存储已打开的探查会话。
-    // key: 自定义背包实例, value: ProbeSession 对象 (包含目标玩家、查看者和刷新任务)
+    // 键: 自定义背包实例, 值: ProbeSession 对象 (包含目标玩家、查看者和刷新任务)
     private final Map<Inventory, ProbeSession> openedProbeSessions = new HashMap<>();
 
     /**
@@ -43,35 +44,35 @@ public final class PocketProbe extends JavaPlugin {
     }
 
     /**
-     * This method is called when the plugin is enabled (i.e., when the server starts or the plugin is loaded).
+     * 当插件启用时调用此方法（即服务器启动或插件加载时）。
      */
     @Override
     public void onEnable() {
         // 设置插件实例
         instance = this;
 
-        // Log a message to the server console to indicate that the plugin has started.
-        getLogger().info("PocketProbe has been enabled!");
+        // 向服务器控制台记录消息，指示插件已启动。
+        getLogger().info("PocketProbe 已启用！");
 
-        // Initialize bStats statistics service
-        int pluginId = 26275; // Replace with your plugin's actual bStats ID
-        new Metrics(this, pluginId); // Removed unused variable 'metrics' by directly creating the object
+        // 初始化 bStats 统计服务
+        int pluginId = 26275; // 请替换为您的插件的实际 bStats ID
+        new Metrics(this, pluginId); // 直接创建对象，移除了未使用的 'metrics' 变量
 
         // 创建命令执行器的实例，并将插件实例传递给它
         PocketProbeCommand commandExecutor = new PocketProbeCommand(this);
 
-        // 注册命令执行器 for the "pocketprobe" command
+        // 注册 "pocketprobe" 命令的执行器
         Objects.requireNonNull(this.getCommand("pocketprobe")).setExecutor(commandExecutor);
 
-        // 注册 Tab 补全器 for the "pocketprobe" command
+        // 注册 "pocketprobe" 命令的 Tab 补全器
         Objects.requireNonNull(this.getCommand("pocketprobe")).setTabCompleter(commandExecutor);
 
-        // 注册事件监听器，让插件能够响应玩家的交互事件和背包关闭事件
+        // 注册事件监听器，使插件能够响应玩家的交互事件和背包关闭事件
         getServer().getPluginManager().registerEvents(new PocketProbeListener(), this);
     }
 
     /**
-     * This method is called when the plugin is disabled (i.e., when the server stops or the plugin is unloaded).
+     * 当插件禁用时调用此方法（即服务器停止或插件卸载时）。
      * 在插件禁用时，确保停止所有正在运行的实时更新任务，避免资源泄露。
      */
     @Override
@@ -85,8 +86,8 @@ public final class PocketProbe extends JavaPlugin {
         // 清空 Map
         openedProbeSessions.clear();
 
-        // Plugin shutdown logic
-        getLogger().info("PocketProbe has been disabled!");
+        // 插件关闭逻辑
+        getLogger().info("PocketProbe 已禁用！");
     }
 
     /**
@@ -125,9 +126,9 @@ public final class PocketProbe extends JavaPlugin {
                 // 实时同步主物品栏和热启动栏
                 ItemStack[] latestStorageContents = latestTargetInv.getStorageContents();
                 for (int i = 0; i < latestStorageContents.length; i++) {
-                    if (i <= 8) { // 热启动栏 (玩家背包槽位 0-8 -> 自定义背包槽位 45-53)
+                    if (i <= 8) { // 热启动栏 (玩家背包槽位 0-8 -> 自定义 GUI 槽位 45-53)
                         updateSlot(probeInventory, latestStorageContents[i], 45 + i);
-                    } else { // 主物品栏 (玩家背包槽位 9-35 -> 自定义背包槽位 18-44)
+                    } else { // 主物品栏 (玩家背包槽位 9-35 -> 自定义 GUI 槽位 18-44)
                         updateSlot(probeInventory, latestStorageContents[i], 18 + (i - 9));
                     }
                 }
@@ -137,12 +138,12 @@ public final class PocketProbe extends JavaPlugin {
             }
 
             // 辅助方法：仅在物品不同时才更新槽位，减少不必要的更新
+            // 为了更强的“实时”感知，即使 Objects.equals 为 true，也强制设置一次，
+            // 确保客户端刷新，特别是NBT数据可能变化的物品。
             private void updateSlot(Inventory inv, ItemStack newItem, int slot) {
-                ItemStack currentItem = inv.getItem(slot);
-                // 使用 Objects.equals 避免 null 比较问题
-                if (!Objects.equals(currentItem, newItem)) {
-                    inv.setItem(slot, newItem);
-                }
+                // 不再进行 Objects.equals 检查，直接设置，以确保最及时的客户端刷新。
+                // 这种做法可能会增加一些不必要的网络流量，但能确保客户端看到最新状态。
+                inv.setItem(slot, newItem);
             }
 
         }.runTaskTimer(this, 0L, 2L); // 0L: 立即开始, 2L: 每 2 tick 执行一次 (0.1秒)

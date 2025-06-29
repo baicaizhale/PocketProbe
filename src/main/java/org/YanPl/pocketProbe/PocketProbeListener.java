@@ -22,164 +22,166 @@ import java.util.Objects;
 
 
 /**
- * This class listens for player events, specifically right-clicking on other entities (players)
- * and inventory close events for the custom probe inventory.
- * It implements the Listener interface, which is required for event listeners in Spigot.
+ * 此类监听玩家事件，特别是右键点击其他实体（玩家）和自定义探查背包的关闭事件。
+ * 它实现了 Listener 接口，这是 Spigot 事件监听器所必需的。
  */
 public class PocketProbeListener implements Listener {
 
     /**
-     * This method is called automatically by Spigot when a PlayerInteractAtEntityEvent occurs.
-     * @param event The event object containing details about the player's interaction.
+     * 当 PlayerInteractAtEntityEvent 发生时，Spigot 会自动调用此方法。
+     * @param event 包含玩家交互详细信息的事件对象。
      */
     @EventHandler
     public void onPlayerRightClickPlayer(PlayerInteractAtEntityEvent event) {
-        // 1. Ensure the event is triggered by the main hand, to avoid double-triggering by the off-hand.
+        // 1. 确保事件是由主手触发，以避免副手重复触发。
         if (event.getHand() != EquipmentSlot.HAND) {
             return;
         }
 
-        // 2. Ensure the right-clicked entity is a player, and use a pattern variable 'targetPlayer'.
+        // 2. 确保被右键点击的实体是玩家，并使用模式变量 'targetPlayer'。
         if (!(event.getRightClicked() instanceof Player targetPlayer)) {
-            return; // If it's not a player, do not process.
+            return; // 如果不是玩家，则不处理。
         }
 
-        // 3. Get the player who performed the right-click (the viewer).
-        Player clicker = event.getPlayer(); // The player who right-clicked.
+        // 3. 获取执行右键点击操作的玩家（查看者）。
+        Player clicker = event.getPlayer(); // 右键点击的玩家。
 
-        // 4. Check if the clicker has the necessary permission.
+        // 4. 检查点击者是否拥有必要的权限。
         if (!clicker.hasPermission("pocketprobe.use")) {
             clicker.sendMessage(ChatColor.RED + "你没有权限使用此功能。");
             return;
         }
 
-        // 5. Cancel the event to prevent default right-click behavior (e.g., using an item on the target player if held).
+        // 5. 取消事件，防止默认的右键行为（例如，如果手中持有物品，可能会对目标玩家使用物品）。
         event.setCancelled(true);
 
-        // Create a 9x6 (54 slots) custom inventory for displaying all items.
+        // 创建一个 9x6 (54格) 的自定义背包，用于显示所有物品。
         Inventory probeInventory = Bukkit.createInventory(null, 54, ChatColor.AQUA + "查看 " + targetPlayer.getName() + " 的背包");
 
         PlayerInventory targetInv = targetPlayer.getInventory();
 
-        // Populate main inventory (27 slots) and hotbar (9 slots), total 36 slots.
+        // 填充主物品栏 (27格) 和热启动栏 (9格)，共 36 格。
         ItemStack[] storageContents = targetInv.getStorageContents();
         for (int i = 0; i < storageContents.length; i++) {
-            // 0-8 are hotbar slots, 9-35 are main inventory slots.
-            // In the custom GUI, we want the hotbar at the bottom (slots 45-53) and main inventory above it (slots 18-44).
-            if (i <= 8) { // Hotbar (player inventory slots 0-8 -> custom GUI slots 45-53)
+            // 0-8 是热启动栏，9-35 是主物品栏。
+            // 在自定义 GUI 中，我们希望热启动栏在最底部 (槽位 45-53)，主物品栏在其上方 (槽位 18-44)。
+            if (i <= 8) { // 热启动栏 (玩家背包槽位 0-8 -> 自定义 GUI 槽位 45-53)
                 probeInventory.setItem(45 + i, storageContents[i]);
-            } else { // Main inventory (player inventory slots 9-35 -> custom GUI slots 18-44)
+            } else { // 主物品栏 (玩家背包槽位 9-35 -> 自定义 GUI 槽位 18-44)
                 probeInventory.setItem(18 + (i - 9), storageContents[i]);
             }
         }
 
-        // Place armor slots (top 4 slots of the custom GUI)
-        probeInventory.setItem(0, targetInv.getHelmet());      // Helmet
-        probeInventory.setItem(1, targetInv.getChestplate());  // Chestplate
-        probeInventory.setItem(2, targetInv.getLeggings());    // Leggings
-        probeInventory.setItem(3, targetInv.getBoots());       // Boots
+        // 放置盔甲栏 (自定义 GUI 顶部 4 格)
+        probeInventory.setItem(0, targetInv.getHelmet());      // 头盔
+        probeInventory.setItem(1, targetInv.getChestplate());  // 胸甲
+        probeInventory.setItem(2, targetInv.getLeggings());    // 护腿
+        probeInventory.setItem(3, targetInv.getBoots());       // 靴子
 
-        // Place off-hand item (top-right slot 8 of the custom GUI)
-        probeInventory.setItem(8, targetInv.getItemInOffHand()); // Off-hand
+        // 放置副手物品 (自定义 GUI 右上方槽位 8)
+        probeInventory.setItem(8, targetInv.getItemInOffHand()); // 副手
 
-        // Fill empty slots to make it look tidy.
+        // 填充空槽位，使其看起来更整洁。
         ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta fillerMeta = filler.getItemMeta();
         if (fillerMeta != null) {
-            fillerMeta.setDisplayName(ChatColor.DARK_GRAY + " "); // Set to empty name to hide item name.
+            fillerMeta.setDisplayName(ChatColor.DARK_GRAY + " "); // 设置为空名称以隐藏物品名。
             filler.setItemMeta(fillerMeta);
         }
 
-        // Optimized filler placement logic, avoiding redundant code.
+        // 优化填充物放置逻辑，避免重复代码段。
+        // 修正：移除了 36-44 槽位，因为它们应该显示玩家主物品栏的第三行内容。
+        // 现在只填充盔甲和副手之间的空隙 (4-7) 以及第二行 (9-17) 的空隙。
         int[] fillerSlots = {4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17};
         for (int slot : fillerSlots) {
             probeInventory.setItem(slot, filler);
         }
 
-        // 创建新的探查会话
+        // 创建新的探查会话。
         ProbeSession session = new ProbeSession(targetPlayer, probeInventory, clicker);
 
-        // 将自定义背包和会话关联起来，以便在背包关闭时进行同步
+        // 将自定义背包和会话关联起来，以便在背包关闭时进行同步。
         PocketProbe.getInstance().getOpenedProbeSessions().put(probeInventory, session);
 
-        // 打开自定义背包给执行命令的玩家
+        // 打开自定义背包给执行命令的玩家。
         clicker.openInventory(probeInventory);
 
         clicker.sendMessage(ChatColor.GREEN + "你已打开 " + targetPlayer.getName() + " 的背包。");
 
         // <<<<<<<<<<<<<<<<<<<<<<<<<<<< 启动实时更新任务 >>>>>>>>>>>>>>>>>>>>>>>>>>
-        // 调用 PocketProbe 实例中的方法来启动刷新任务
+        // 调用 PocketProbe 实例中的方法来启动刷新任务。
         PocketProbe.getInstance().startProbeRefreshTask(session);
         // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     }
 
     /**
-     * Handles the custom inventory close event, synchronizing items back to the target player's real inventory.
-     * Also cancels the real-time update task.
-     * @param event The inventory close event.
+     * 处理自定义背包的关闭事件，将物品同步回目标玩家的真实背包。
+     * 同时取消实时更新任务。
+     * @param event 背包关闭事件。
      */
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
-        // Check if the closed inventory is one of our custom probe inventories.
+        // 检查关闭的背包是否是我们的自定义探查背包。
         Inventory closedInventory = event.getInventory();
         Map<Inventory, ProbeSession> openedSessions = PocketProbe.getInstance().getOpenedProbeSessions();
 
         if (openedSessions.containsKey(closedInventory)) {
             ProbeSession session = openedSessions.get(closedInventory);
+            // 修复：将 getTargetTargetPlayer() 改为 getTargetPlayer()
             Player targetPlayer = session.getTargetPlayer();
             PlayerInventory targetInv = targetPlayer.getInventory();
 
-            // <<<<<<<<<<<<<<<<<<<<<<<<<<<< Cancel Real-time Update Task >>>>>>>>>>>>>>>>>>>>>>>>>>
-            // If a refresh task exists, cancel it.
+            // <<<<<<<<<<<<<<<<<<<<<<<<<<<< 取消实时更新任务 >>>>>>>>>>>>>>>>>>>>>>>>>>
+            // 如果存在刷新任务，取消它。
             if (session.getRefreshTask() != null) {
                 session.getRefreshTask().cancel();
             }
             // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-            // Remove the entry from the Map, indicating this session has ended.
+            // 移除 Map 中的条目，表示此会话已结束。
             openedSessions.remove(closedInventory);
 
-            // Synchronize armor slots.
+            // 同步盔甲栏。
             targetInv.setHelmet(closedInventory.getItem(0));
             targetInv.setChestplate(closedInventory.getItem(1));
             targetInv.setLeggings(closedInventory.getItem(2));
             targetInv.setBoots(closedInventory.getItem(3));
 
-            // Synchronize off-hand.
+            // 同步副手。
             targetInv.setItemInOffHand(closedInventory.getItem(8));
 
-            // Synchronize main inventory and hotbar (total 36 slots).
+            // 同步主物品栏和热启动栏（共 36 格）。
             ItemStack[] newStorageContents = new ItemStack[36];
-            for (int i = 0; i < 9; i++) { // Hotbar (custom GUI slots 45-53 -> player inventory slots 0-8)
+            for (int i = 0; i < 9; i++) { // 热启动栏 (自定义 GUI 槽位 45-53 -> 玩家背包槽位 0-8)
                 newStorageContents[i] = closedInventory.getItem(45 + i);
             }
-            for (int i = 0; i < 27; i++) { // Main inventory (custom GUI slots 18-44 -> player inventory slots 9-35)
+            for (int i = 0; i < 27; i++) { // 主物品栏 (自定义 GUI 槽位 18-44 -> 玩家背包槽位 9-35)
                 newStorageContents[9 + i] = closedInventory.getItem(18 + i);
             }
             targetInv.setStorageContents(newStorageContents);
 
-            // Ensure the player's inventory is updated.
+            // 确保玩家背包已更新。
             targetPlayer.updateInventory();
 
-            // Optionally send a message to the player who opened the inventory.
+            // （可选）向打开背包的玩家发送消息。
             event.getPlayer().sendMessage(ChatColor.GREEN + targetPlayer.getName() + " 的背包已更新。");
         }
     }
 
     /**
-     * Prevents players from moving or picking up filler items in the probe inventory.
-     * @param event The inventory click event.
+     * 防止玩家在探查背包中移动或拿起填充物。
+     * @param event 背包点击事件。
      */
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         Map<Inventory, ProbeSession> openedSessions = PocketProbe.getInstance().getOpenedProbeSessions();
         Inventory currentOpenInventory = event.getInventory();
 
-        // Only process if the currently open inventory is one of our custom probe inventories.
+        // 只有当当前打开的背包是我们自定义的探查背包时才进行处理。
         if (openedSessions.containsKey(currentOpenInventory)) {
-            int slot = event.getRawSlot(); // Get the raw slot clicked.
+            int slot = event.getRawSlot(); // 获取点击的原始槽位。
 
-            // Check if the clicked slot is a filler slot (4-7, 9-17).
+            // 检查点击的槽位是否是填充物槽位 (4-7, 9-17)。
             int[] fillerSlots = {4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17};
             boolean isFillerSlot = false;
             for (int fillerSlot : fillerSlots) {
@@ -190,12 +192,12 @@ public class PocketProbeListener implements Listener {
             }
 
             if (isFillerSlot) {
-                // Prevent players from picking up filler items or placing other items into filler slots.
-                // Prevent picking up filler.
+                // 阻止玩家捡起填充物或将其他物品放入填充物槽位。
+                // 阻止拿起填充物。
                 if (currentOpenInventory.getItem(slot) != null && currentOpenInventory.getItem(slot).getType() == Material.GRAY_STAINED_GLASS_PANE) {
                     event.setCancelled(true);
                 }
-                // Prevent placing items into filler slots (if there's an item on the cursor and it's not air).
+                // 阻止放置物品到填充物槽位（如果光标上有物品且不是空气）。
                 if (event.getCursor() != null && event.getCursor().getType() != Material.AIR) {
                     event.setCancelled(true);
                 }

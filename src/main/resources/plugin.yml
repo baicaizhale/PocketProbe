@@ -1,43 +1,43 @@
-# This is the main configuration file for your Spigot plugin.
-# It tells the Spigot server essential information about your plugin.
+# 这是你的 Spigot 插件的主要配置文件。
+# 它告诉 Spigot 服务器关于你插件的基本信息。
 
-# The name of your plugin. This should match your artifactId in pom.xml.
+# 你插件的名称。这应该与 pom.xml 中的 artifactId 匹配。
 name: PocketProbe
 
-# The version of your plugin. It's good practice to update this as you make changes.
-version: 1.4.5 # 版本号已更新为 1.4.5
+# 你插件的版本。最好在每次更改后更新它。
+version: 1.4.6
 
-# The main class of your plugin. This is the entry point that Spigot loads.
-# It must be in the format: <package_name>.<main_class_name>
+# 你插件的主类。这是 Spigot 加载插件时的入口点。
+# 格式必须为: <包名>.<主类名>
 main: org.YanPl.pocketProbe.PocketProbe
 
-# The API version your plugin is built against.
-# This helps Spigot ensure compatibility. For your 1.20.4 dependency, 1.20 is appropriate.
+# 你的插件所基于的 API 版本。
+# 这有助于 Spigot 确保兼容性。对于你当前的依赖，1.18 是合适的。
 api-version: 1.18
 
-# Defines the commands your plugin will handle.
+# 定义你的插件将处理的命令。
 commands:
-  # The command name (e.g., /pocketprobe)
+  # 命令名称 (例如, /pocketprobe)
   pocketprobe:
-    # A short description of what the command does.
-    description: Opens another player's inventory for inspection and editing.
-    # How to use the command, displayed if usage is incorrect.
-    usage: /<command> <player_name>
-    # The permission required to use this command.
+    # 命令的简短描述。
+    description: 打开另一个玩家的背包进行检查和编辑。
+    # 命令的使用方法，在用法不正确时显示。
+    usage: /<command> <玩家名>
+    # 使用此命令所需的权限。
     permission: pocketprobe.use
-    # The message shown if a player tries to use the command without permission.
-    permission-message: You do not have permission to use this command.
-    aliases: [pp] # Add 'pp' as an alias for 'pocketprobe'
+    # 如果玩家没有权限使用此命令，则显示此消息。
+    permission-message: 你没有权限使用此命令。
+    aliases: [pp] # 添加 'pp' 作为 'pocketprobe' 的别名
 
-# Defines the permissions used by your plugin.
+# 定义你的插件使用的权限。
 permissions:
-  # The specific permission node.
+  # 特定的权限节点。
   pocketprobe.use:
-    # A description for server administrators.
-    description: Allows players to use the /pocketprobe command to view and edit inventories.
-    # The default access level for this permission:
-    # - op: Only server operators can use it by default.
-    # - true: Everyone has it by default.
-    # - false: No one has it by default.
-    # - not-op: Everyone except operators has it by default.
+    # 为服务器管理员提供的描述。
+    description: 允许玩家使用 /pocketprobe 命令查看和编辑背包。
+    # 此权限的默认访问级别：
+    # - op: 默认只有服务器操作员可以使用。
+    # - true: 默认所有人都可以使用。
+    # - false: 默认没有人可以使用。
+    # - not-op: 默认除操作员外所有人都可以使用。
     default: op

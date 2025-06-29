@@ -2,7 +2,7 @@ package org.YanPl.pocketProbe;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
+import org.bukkit.Material; // 导入 Material 类
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * This class handles the /pocketprobe command and provides tab completion for player names.
- * It implements CommandExecutor for command handling and TabCompleter for tab completion.
+ * 此类处理 /pocketprobe 命令并为玩家名称提供 Tab 补全。
+ * 它实现了 CommandExecutor 用于命令处理，实现了 TabCompleter 用于 Tab 补全。
  */
 public class PocketProbeCommand implements CommandExecutor, TabCompleter {
 
@@ -32,29 +32,29 @@ public class PocketProbeCommand implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * This method is called whenever the registered command (in this case, /pocketprobe or /pp) is executed.
+     * 每当注册的命令（此处为 /pocketprobe 或 /pp）被执行时调用此方法。
      *
-     * @param sender The entity that executed the command (e.g., a player, console, or command block).
-     * @param command The command object itself.
-     * @param label The actual command alias used (e.g., "pocketprobe" or "pp" if typed "/pocketprobe" or "/pp").
-     * @param args An array of arguments provided after the command (e.g., in "/pocketprobe Notch", "Notch" is an arg).
-     * @return true if the command was handled successfully, false otherwise (which will display the command's usage message).
+     * @param sender 执行命令的实体（例如，玩家、控制台或命令方块）。
+     * @param command 命令对象本身。
+     * @param label 实际使用的命令别名（例如，如果输入 "/pocketprobe" 或 "/pp"，则为 "pocketprobe" 或 "pp"）。
+     * @param args 命令后提供的参数数组（例如，在 "/pocketprobe Notch" 中，"Notch" 是一个参数）。
+     * @return 如果命令处理成功返回 true，否则返回 false（这将显示命令的使用说明）。
      */
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        // 1. Check if the command sender is a player，并使用模式变量 'player'
+        // 1. 检查命令发送者是否为玩家，并使用模式变量 'player'。
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(ChatColor.RED + "Only players can use this command.");
+            sender.sendMessage(ChatColor.RED + "只有玩家才能使用此命令。");
             return true;
         }
 
-        // 2. Check if the player has the necessary permission.
+        // 2. 检查玩家是否拥有必要的权限。
         if (!player.hasPermission("pocketprobe.use")) {
             player.sendMessage(ChatColor.RED + "你没有权限使用此命令。");
             return true;
         }
 
-        // 3. Validate command arguments.
+        // 3. 验证命令参数。
         if (args.length == 0) {
             player.sendMessage(ChatColor.YELLOW + "用法: /" + label + " <玩家名>");
             return true;
@@ -62,10 +62,10 @@ public class PocketProbeCommand implements CommandExecutor, TabCompleter {
 
         String targetPlayerName = args[0];
 
-        // 4. Find the target player.
+        // 4. 查找目标玩家。
         Player targetPlayer = Bukkit.getPlayerExact(targetPlayerName);
 
-        // 5. Check if the target player is online and exists.
+        // 5. 检查目标玩家是否在线且存在。
         if (targetPlayer == null || !targetPlayer.isOnline()) {
             player.sendMessage(ChatColor.RED + "玩家 '" + targetPlayerName + "' 不在线或不存在。");
             return true;
@@ -81,20 +81,20 @@ public class PocketProbeCommand implements CommandExecutor, TabCompleter {
         for (int i = 0; i < storageContents.length; i++) {
             // 0-8 是热启动栏，9-35 是主物品栏。
             // 我们希望在自定义 GUI 中，热启动栏在最下面 (45-53)，主物品栏在上面 (18-44)。
-            if (i <= 8) { // 热启动栏 (玩家背包槽位 0-8 -> 自定义背包槽位 45-53)
+            if (i <= 8) { // 热启动栏 (玩家背包槽位 0-8 -> 自定义 GUI 槽位 45-53)
                 probeInventory.setItem(45 + i, storageContents[i]);
-            } else { // 主物品栏 (玩家背包槽位 9-35 -> 自定义背包槽位 18-44)
+            } else { // 主物品栏 (玩家背包槽位 9-35 -> 自定义 GUI 槽位 18-44)
                 probeInventory.setItem(18 + (i - 9), storageContents[i]);
             }
         }
 
-        // 放置盔甲栏 (自定义背包顶部 4 格)
+        // 放置盔甲栏 (自定义 GUI 顶部 4 格)
         probeInventory.setItem(0, targetInv.getHelmet());      // 头盔
         probeInventory.setItem(1, targetInv.getChestplate());  // 胸甲
         probeInventory.setItem(2, targetInv.getLeggings());    // 护腿
         probeInventory.setItem(3, targetInv.getBoots());       // 靴子
 
-        // 放置副手 (自定义背包右上方槽位 8)
+        // 放置副手 (自定义 GUI 右上方槽位 8)
         probeInventory.setItem(8, targetInv.getItemInOffHand()); // 副手
 
         // 填充空槽位，使其看起来更整洁
@@ -129,14 +129,14 @@ public class PocketProbeCommand implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * This method is called when a player presses TAB while typing a command.
-     * It provides suggestions for command arguments.
+     * 当玩家在输入命令时按下 TAB 键时调用此方法。
+     * 它为命令参数提供建议。
      *
-     * @param sender The entity that is typing the command (usually a Player).
-     * @param command The command object.
-     * @param alias The command alias used (e.g., "pocketprobe" or "pp").
-     * @param args The arguments typed so far.
-     * @return A list of suggested strings for the current argument.
+     * @param sender 正在输入命令的实体（通常是玩家）。
+     * @param command 命令对象。
+     * @param alias 实际使用的命令别名（例如，"pocketprobe" 或 "pp"）。
+     * @param args 已经输入的参数。
+     * @return 当前参数的建议字符串列表。
      */
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
