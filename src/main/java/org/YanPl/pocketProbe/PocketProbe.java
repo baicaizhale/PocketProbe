@@ -1,13 +1,19 @@
 package org.YanPl.pocketProbe;
 
-import org.bukkit.inventory.Inventory;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bstats.bukkit.Metrics;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+// 关键修复：添加 ProbeSession 类的导入
+import org.YanPl.pocketProbe.ProbeSession;
 
 /**
  * The main class for the PocketProbe Spigot plugin.
@@ -51,7 +57,7 @@ public final class PocketProbe extends JavaPlugin {
 
         // Initialize bStats statistics service
         int pluginId = 26275; // Replace with your plugin's actual bStats ID
-        Metrics metrics = new Metrics(this, pluginId);
+        new Metrics(this, pluginId); // Removed unused variable 'metrics' by directly creating the object
 
         // 创建命令执行器的实例，并将插件实例传递给它
         PocketProbeCommand commandExecutor = new PocketProbeCommand(this);
@@ -83,5 +89,62 @@ public final class PocketProbe extends JavaPlugin {
 
         // Plugin shutdown logic
         getLogger().info("PocketProbe has been disabled!");
+    }
+
+    /**
+     * 启动一个 BukkitRunnable 任务，用于实时刷新探查背包的内容。
+     * @param session 当前的探查会话，包含查看者、目标玩家和自定义背包。
+     */
+    public void startProbeRefreshTask(ProbeSession session) {
+        Player targetPlayer = session.getTargetPlayer();
+        Inventory probeInventory = session.getProbeInventory();
+        Player viewerPlayer = session.getViewerPlayer();
+
+        BukkitTask refreshTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                // 如果目标玩家不在线，或者查看者不再查看此背包，则取消任务
+                if (!targetPlayer.isOnline() || viewerPlayer.getOpenInventory() == null || viewerPlayer.getOpenInventory().getTopInventory() != probeInventory) {
+                    this.cancel();
+                    // 如果任务被取消，确保从 Map 中移除会话
+                    openedProbeSessions.remove(probeInventory);
+                    return;
+                }
+
+                // 获取最新的玩家背包内容
+                PlayerInventory latestTargetInv = targetPlayer.getInventory();
+
+                // 实时同步盔甲栏
+                updateSlot(probeInventory, latestTargetInv.getHelmet(), 0);
+                updateSlot(probeInventory, latestTargetInv.getChestplate(), 1);
+                updateSlot(probeInventory, latestTargetInv.getLeggings(), 2);
+                updateSlot(probeInventory, latestTargetInv.getBoots(), 3);
+
+                // 实时同步副手
+                updateSlot(probeInventory, latestTargetInv.getItemInOffHand(), 8);
+
+                // 实时同步主物品栏和热启动栏
+                ItemStack[] latestStorageContents = latestTargetInv.getStorageContents();
+                for (int i = 0; i < latestStorageContents.length; i++) {
+                    if (i <= 8) { // 热启动栏 (玩家背包槽位 0-8 -> 自定义背包槽位 45-53)
+                        updateSlot(probeInventory, latestStorageContents[i], 45 + i);
+                    } else { // 主物品栏 (玩家背包槽位 9-35 -> 自定义背包槽位 18-44)
+                        updateSlot(probeInventory, latestStorageContents[i], 18 + (i - 9));
+                    }
+                }
+            }
+
+            // 辅助方法：仅在物品不同时才更新槽位，减少不必要的更新
+            private void updateSlot(Inventory inv, ItemStack newItem, int slot) {
+                ItemStack currentItem = inv.getItem(slot);
+                if (!Objects.equals(currentItem, newItem)) {
+                    inv.setItem(slot, newItem);
+                }
+            }
+
+        }.runTaskTimer(this, 0L, 2L); // 'this' 指的是 PocketProbe 实例
+
+        // 将任务关联到会话
+        session.setRefreshTask(refreshTask);
     }
 }

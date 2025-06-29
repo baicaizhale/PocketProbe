@@ -15,7 +15,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask; // 修复: 添加 BukkitTask 的导入
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Map;
 import java.util.Objects;
@@ -91,75 +91,26 @@ public class PocketProbeListener implements Listener {
         }
 
         // Optimized filler placement logic, avoiding redundant code.
-        // Corrected: Removed slots 36-44, as they should display the third row of the player's main inventory.
-        // Now only fills gaps between armor and off-hand (4-7) and the second row (9-17) of the custom GUI.
         int[] fillerSlots = {4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17};
         for (int slot : fillerSlots) {
             probeInventory.setItem(slot, filler);
         }
 
-        // Create a new probe session.
+        // 创建新的探查会话
         ProbeSession session = new ProbeSession(targetPlayer, probeInventory, clicker);
 
-        // Associate the custom inventory with the session for synchronization when the inventory is closed.
+        // 将自定义背包和会话关联起来，以便在背包关闭时进行同步
         PocketProbe.getInstance().getOpenedProbeSessions().put(probeInventory, session);
 
-        // Open the custom inventory for the command executing player.
+        // 打开自定义背包给执行命令的玩家
         clicker.openInventory(probeInventory);
 
         clicker.sendMessage(ChatColor.GREEN + "你已打开 " + targetPlayer.getName() + " 的背包。");
 
-        // <<<<<<<<<<<<<<<<<<<<<<<<<<<< Start Real-time Update Task >>>>>>>>>>>>>>>>>>>>>>>>>>
-        // Refresh inventory content every 2 ticks (0.1 seconds).
-        BukkitTask refreshTask = new BukkitRunnable() {
-            @Override
-            public void run() {
-                // If the target player is offline, or the viewer is no longer viewing this specific inventory, cancel the task.
-                // Added a null check for clicker.getOpenInventory() to prevent NullPointerException if viewer's inventory is somehow closed abruptly.
-                if (!targetPlayer.isOnline() || clicker.getOpenInventory() == null || clicker.getOpenInventory().getTopInventory() != probeInventory) {
-                    this.cancel();
-                    // If the task is cancelled, ensure the session is removed from the Map.
-                    PocketProbe.getInstance().getOpenedProbeSessions().remove(probeInventory);
-                    return;
-                }
-
-                // Get the latest inventory content of the target player.
-                PlayerInventory latestTargetInv = targetPlayer.getInventory();
-
-                // Real-time synchronization of armor slots.
-                updateSlot(probeInventory, latestTargetInv.getHelmet(), 0);
-                updateSlot(probeInventory, latestTargetInv.getChestplate(), 1);
-                updateSlot(probeInventory, latestTargetInv.getLeggings(), 2);
-                updateSlot(probeInventory, latestTargetInv.getBoots(), 3);
-
-                // Real-time synchronization of off-hand.
-                updateSlot(probeInventory, latestTargetInv.getItemInOffHand(), 8);
-
-                // Real-time synchronization of main inventory and hotbar.
-                ItemStack[] latestStorageContents = latestTargetInv.getStorageContents();
-                for (int i = 0; i < latestStorageContents.length; i++) {
-                    if (i <= 8) { // Hotbar (player inventory slots 0-8 -> custom GUI slots 45-53)
-                        updateSlot(probeInventory, latestStorageContents[i], 45 + i);
-                    } else { // Main inventory (player inventory slots 9-35 -> custom GUI slots 18-44)
-                        updateSlot(probeInventory, latestStorageContents[i], 18 + (i - 9));
-                    }
-                }
-            }
-
-            // Helper method: Only update the slot if the item is different, to reduce unnecessary updates.
-            private void updateSlot(Inventory inv, ItemStack newItem, int slot) {
-                ItemStack currentItem = inv.getItem(slot);
-                // 修复: 在调用 getItem() 或 getType() 之前添加 null 检查，以避免 NullPointerException
-                if (!Objects.equals(currentItem, newItem)) { // Use Objects.equals to handle null comparisons correctly.
-                    inv.setItem(slot, newItem);
-                }
-            }
-
-        }.runTaskTimer(PocketProbe.getInstance(), 0L, 2L); // 0L: Start immediately, 2L: Execute every 2 ticks (0.1 seconds).
-
-        // Associate the task with the session.
-        session.setRefreshTask(refreshTask);
-        // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        // <<<<<<<<<<<<<<<<<<<<<<<<<<<< 启动实时更新任务 >>>>>>>>>>>>>>>>>>>>>>>>>>
+        // 调用 PocketProbe 实例中的方法来启动刷新任务
+        PocketProbe.getInstance().startProbeRefreshTask(session);
+        // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     }
 
     /**
@@ -243,12 +194,12 @@ public class PocketProbeListener implements Listener {
             if (isFillerSlot) {
                 // Prevent players from picking up filler items or placing other items into filler slots.
                 // Prevent picking up filler.
-                // 修复: 在调用 getType() 之前添加 null 检查，以避免 NullPointerException
+                // Added null check for currentOpenInventory.getItem(slot)
                 if (currentOpenInventory.getItem(slot) != null && currentOpenInventory.getItem(slot).getType() == Material.GRAY_STAINED_GLASS_PANE) {
                     event.setCancelled(true);
                 }
                 // Prevent placing items into filler slots (if there's an item on the cursor and it's not air).
-                // 修复: 在调用 getType() 之前添加 null 检查，以避免 NullPointerException
+                // Added null check for event.getCursor()
                 if (event.getCursor() != null && event.getCursor().getType() != Material.AIR) {
                     event.setCancelled(true);
                 }

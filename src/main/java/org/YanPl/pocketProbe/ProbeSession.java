@@ -1,26 +1,20 @@
 package org.YanPl.pocketProbe;
 
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.scheduler.BukkitTask; // 导入 BukkitTask 类
+import org.bukkit.scheduler.BukkitTask;
 
 /**
- * Represents an active PocketProbe inventory viewing session.
- * Stores references to the target player, the custom probe inventory,
- * the viewer player, and the associated refresh task.
+ * Represents a probe session that tracks the target player, viewer player,
+ * and the custom inventory being used for probing.
  */
 public class ProbeSession {
-    private final Player targetPlayer;  // 被查看背包的玩家
-    private final Inventory probeInventory; // 自定义的探查背包界面
-    private final Player viewerPlayer; // 打开背包的玩家 (查看者)
-    private BukkitTask refreshTask;     // 关联的实时刷新任务
+    private final Player targetPlayer;
+    private final Inventory probeInventory;
+    private final Player viewerPlayer;
+    private BukkitTask refreshTask;
 
-    /**
-     * 构造一个新的探查会话。
-     * @param targetPlayer 被查看背包的玩家。
-     * @param probeInventory 自定义的探查背包界面。
-     * @param viewerPlayer 打开背包的玩家。
-     */
     public ProbeSession(Player targetPlayer, Inventory probeInventory, Player viewerPlayer) {
         this.targetPlayer = targetPlayer;
         this.probeInventory = probeInventory;

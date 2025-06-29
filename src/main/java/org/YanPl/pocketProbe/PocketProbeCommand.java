@@ -111,7 +111,7 @@ public class PocketProbeCommand implements CommandExecutor, TabCompleter {
             probeInventory.setItem(slot, filler);
         }
 
-        // 修复: 创建 ProbeSession 实例并使用 getOpenedProbeSessions() 方法
+        // 创建 ProbeSession 实例
         ProbeSession session = new ProbeSession(targetPlayer, probeInventory, player);
         plugin.getOpenedProbeSessions().put(probeInventory, session);
 
@@ -119,6 +119,11 @@ public class PocketProbeCommand implements CommandExecutor, TabCompleter {
         player.openInventory(probeInventory);
 
         player.sendMessage(ChatColor.GREEN + "已打开 " + targetPlayer.getName() + " 的背包。");
+
+        // <<<<<<<<<<<<<<<<<<<<<<<<<<<< 启动实时更新任务 >>>>>>>>>>>>>>>>>>>>>>>>>>
+        // 调用 PocketProbe 实例中的方法来启动刷新任务
+        plugin.startProbeRefreshTask(session);
+        // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
         return true;
     }
