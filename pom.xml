@@ -6,7 +6,7 @@
 
     <groupId>org.YanPl</groupId>
     <artifactId>pocketprobe</artifactId>
-    <version>1.4.6</version>
+    <version>1.4.7</version>
     <packaging>jar</packaging>
 
     <name>pocketprobe</name>
@@ -52,7 +52,7 @@
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
-                                        <!-- 添加此行以从依赖项中排除 META-INF/MANIFEST.MF -->
+                                        <!-- 排除所有依赖项中的 META-INF/MANIFEST.MF 文件 -->
                                         <exclude>META-INF/MANIFEST.MF</exclude>
                                     </excludes>
                                 </filter>

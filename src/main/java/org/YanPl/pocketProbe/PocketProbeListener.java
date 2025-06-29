@@ -125,7 +125,7 @@ public class PocketProbeListener implements Listener {
 
         if (openedSessions.containsKey(closedInventory)) {
             ProbeSession session = openedSessions.get(closedInventory);
-            Player targetPlayer = session.getTargetPlayer(); // 修复：确保调用的是 getTargetPlayer()
+            Player targetPlayer = session.getTargetPlayer();
             PlayerInventory targetInv = targetPlayer.getInventory();
 
             // <<<<<<<<<<<<<<<<<<<<<<<<<<<< 取消实时更新任务 >>>>>>>>>>>>>>>>>>>>>>>>>>

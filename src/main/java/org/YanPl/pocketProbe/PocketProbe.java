@@ -114,40 +114,55 @@ public final class PocketProbe extends JavaPlugin {
                 // 获取最新的玩家背包内容
                 PlayerInventory latestTargetInv = targetPlayer.getInventory();
 
-                // 实时同步盔甲栏
-                updateSlot(probeInventory, latestTargetInv.getHelmet(), 0);
-                updateSlot(probeInventory, latestTargetInv.getChestplate(), 1);
-                updateSlot(probeInventory, latestTargetInv.getLeggings(), 2);
-                updateSlot(probeInventory, latestTargetInv.getBoots(), 3);
+                // ***** 关键修复：重新构建整个探查背包的内容数组 *****
+                ItemStack[] newProbeContents = new ItemStack[54];
 
-                // 实时同步副手
-                updateSlot(probeInventory, latestTargetInv.getItemInOffHand(), 8);
+                // 填充盔甲栏 (槽位 0-3)
+                newProbeContents[0] = latestTargetInv.getHelmet();
+                newProbeContents[1] = latestTargetInv.getChestplate();
+                newProbeContents[2] = latestTargetInv.getLeggings();
+                newProbeContents[3] = latestTargetInv.getBoots();
 
-                // 实时同步主物品栏和热启动栏
-                ItemStack[] latestStorageContents = latestTargetInv.getStorageContents();
-                for (int i = 0; i < latestStorageContents.length; i++) {
-                    if (i <= 8) { // 热启动栏 (玩家背包槽位 0-8 -> 自定义 GUI 槽位 45-53)
-                        updateSlot(probeInventory, latestStorageContents[i], 45 + i);
-                    } else { // 主物品栏 (玩家背包槽位 9-35 -> 自定义 GUI 槽位 18-44)
-                        updateSlot(probeInventory, latestStorageContents[i], 18 + (i - 9));
+                // 填充副手 (槽位 8)
+                newProbeContents[8] = latestTargetInv.getItemInOffHand();
+
+                // 填充主物品栏 (玩家背包槽位 9-35 -> 探查背包槽位 18-44)
+                // 填充热启动栏 (玩家背包槽位 0-8 -> 探查背包槽位 45-53)
+                ItemStack[] targetStorageContents = latestTargetInv.getStorageContents();
+                for (int i = 0; i < targetStorageContents.length; i++) {
+                    if (i <= 8) { // 热启动栏
+                        newProbeContents[45 + i] = targetStorageContents[i];
+                    } else { // 主物品栏
+                        newProbeContents[18 + (i - 9)] = targetStorageContents[i];
                     }
                 }
 
+                // 填充空槽位（灰色玻璃板），确保它们不被玩家物品覆盖，并保持界面整洁。
+                ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+                ItemMeta fillerMeta = filler.getItemMeta();
+                if (fillerMeta != null) {
+                    fillerMeta.setDisplayName(ChatColor.DARK_GRAY + " "); // 设置为空名称以隐藏物品名。
+                    filler.setItemMeta(fillerMeta);
+                }
+                int[] fillerSlots = {4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17};
+                for (int slot : fillerSlots) {
+                    // 只有当该槽位目前是空的，或者已经被填充物占据时，才重新填充
+                    // 这避免了覆盖玩家在探查界面中可能放置的物品
+                    ItemStack currentProbeItem = probeInventory.getItem(slot);
+                    if (currentProbeItem == null || (currentProbeItem.getType() == Material.GRAY_STAINED_GLASS_PANE && Objects.equals(currentProbeItem.getItemMeta(), fillerMeta))) {
+                        newProbeContents[slot] = filler;
+                    } else {
+                        // 如果玩家在此槽位放置了非填充物，则保留玩家放置的物品
+                        newProbeContents[slot] = currentProbeItem;
+                    }
+                }
+                // ***** 结束重新构建 *****
+
+                // 使用 setContents 强制更新整个探查背包的内容，确保客户端完全同步。
+                probeInventory.setContents(newProbeContents);
+
                 // 强制查看者刷新其客户端的背包界面，以确保最及时的显示。
                 viewerPlayer.updateInventory();
-            }
-
-            /**
-             * 辅助方法：更新指定槽位的物品。
-             * 直接设置物品，以确保最及时的客户端刷新，特别是NBT数据可能变化的物品。
-             * @param inv 要更新的背包。
-             * @param newItem 新的物品堆。
-             * @param slot 要更新的槽位。
-             */
-            private void updateSlot(Inventory inv, ItemStack newItem, int slot) {
-                // 不再进行 Objects.equals 检查，直接设置，以确保最及时的客户端刷新。
-                // 这种做法可能会增加一些不必要的网络流量，但能确保客户端看到最新状态。
-                inv.setItem(slot, newItem);
             }
 
         }.runTaskTimer(this, 0L, 2L); // 0L: 立即开始, 2L: 每 2 tick 执行一次 (0.1秒)

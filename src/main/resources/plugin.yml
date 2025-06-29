@@ -5,14 +5,14 @@
 name: PocketProbe
 
 # 你插件的版本。最好在每次更改后更新它。
-version: 1.4.6
+version: 1.4.7 
 
 # 你插件的主类。这是 Spigot 加载插件时的入口点。
 # 格式必须为: <包名>.<主类名>
 main: org.YanPl.pocketProbe.PocketProbe
 
-# 你的插件所基于的 API 版本。
-# 这有助于 Spigot 确保兼容性。对于你当前的依赖，1.18 是合适的。
+# 你插件所基于的 API 版本。
+# 这有助于 Spigot 确保兼容性。
 api-version: 1.18
 
 # 定义你的插件将处理的命令。
