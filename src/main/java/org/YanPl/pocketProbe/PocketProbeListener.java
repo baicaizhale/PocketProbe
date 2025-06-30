@@ -1,8 +1,8 @@
 package org.YanPl.pocketProbe;
 
-import org.bukkit.Bukkit; // Added for Bukkit.getScheduler
-import org.bukkit.ChatColor; // Added for ChatColor.RED, ChatColor.GREEN
-import org.bukkit.Material; // Added for Material.GRAY_STAINED_GLASS_PANE
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -13,11 +13,14 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.inventory.meta.ItemMeta; // Added for ItemMeta
-import org.bukkit.scheduler.BukkitTask; // Added for BukkitTask
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
+import org.jetbrains.annotations.NotNull; // 导入 @NotNull
 
-import java.util.Map; // Added for Map
-import java.util.Objects; // Added for Objects.requireNonNull (if used), Objects.equals
+import java.util.Map;
+import java.util.Objects;
+
 
 /**
  * 此类监听玩家事件，特别是右键点击其他实体（玩家）和自定义探查背包的关闭事件。
@@ -30,14 +33,14 @@ public class PocketProbeListener implements Listener {
      * @param event 包含玩家交互详细信息的事件对象。
      */
     @EventHandler
-    public void onPlayerRightClickPlayer(PlayerInteractAtEntityEvent event) {
+    public void onPlayerRightClickPlayer(@NotNull PlayerInteractAtEntityEvent event) {
         // 1. 确保事件是由主手触发，以避免副手重复触发。
         if (event.getHand() != EquipmentSlot.HAND) {
             return;
         }
 
         // 2. 确保被右键点击的实体是玩家，并使用模式变量 'targetPlayer'。
-        if (!(event.getRightClicked() instanceof Player targetPlayer)) { // 修复: 'targetPlayer' 模式变量警告
+        if (!(event.getRightClicked() instanceof Player targetPlayer)) {
             return; // 如果不是玩家，则不处理。
         }
 
@@ -116,7 +119,7 @@ public class PocketProbeListener implements Listener {
      * @param event 背包关闭事件。
      */
     @EventHandler
-    public void onInventoryClose(InventoryCloseEvent event) {
+    public void onInventoryClose(@NotNull InventoryCloseEvent event) {
         // 检查关闭的背包是否是我们的自定义探查背包。
         Inventory closedInventory = event.getInventory();
         Map<Inventory, ProbeSession> openedSessions = PocketProbe.getInstance().getOpenedProbeSessions();
@@ -169,7 +172,7 @@ public class PocketProbeListener implements Listener {
      * @param event 背包点击事件。
      */
     @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
+    public void onInventoryClick(@NotNull InventoryClickEvent event) { // 修复: @NotNull 警告
         Map<Inventory, ProbeSession> openedSessions = PocketProbe.getInstance().getOpenedProbeSessions();
         Inventory clickedInventory = event.getClickedInventory(); // 获取被点击的背包
 
@@ -203,6 +206,7 @@ public class PocketProbeListener implements Listener {
                     }
 
                     PlayerInventory targetInv = targetPlayer.getInventory();
+                    // 修复: 确保 currentItemInProbe 不为 null 且 getType() 调用的安全性
                     ItemStack currentItemInProbe = clickedInventory.getItem(slot);
 
                     // 根据槽位类型进行同步

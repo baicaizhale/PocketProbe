@@ -1,7 +1,8 @@
 package org.YanPl.pocketProbe;
 
-import org.bukkit.Bukkit; // Added for Bukkit.getPlayerExact, Bukkit.getOnlinePlayers, Bukkit.createInventory
-import org.bukkit.ChatColor; // Added for ChatColor.AQUA, ChatColor.YELLOW, ChatColor.RED, ChatColor.GREEN, ChatColor.DARK_GRAY
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -10,13 +11,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.inventory.meta.ItemMeta; // Added for ItemMeta
-import org.bukkit.Material; // 关键修复：确保 Material 类被导入
+import org.bukkit.inventory.meta.ItemMeta;
+import org.jetbrains.annotations.NotNull; // 导入 @NotNull
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * 此类处理 /pocketprobe 命令并为玩家名称提供 Tab 补全。
@@ -44,7 +44,7 @@ public class PocketProbeCommand implements CommandExecutor, TabCompleter {
      * @return 如果命令处理成功返回 true，否则返回 false（这将显示命令的使用说明）。
      */
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         // 1. 检查命令发送者是否为玩家，并使用模式变量 'player'。
         if (!(sender instanceof Player player)) {
             sender.sendMessage(ChatColor.RED + "只有玩家才能使用此命令。");
@@ -142,7 +142,7 @@ public class PocketProbeCommand implements CommandExecutor, TabCompleter {
      * @return 当前参数的建议字符串列表。
      */
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {

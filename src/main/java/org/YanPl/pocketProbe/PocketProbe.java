@@ -1,13 +1,13 @@
 package org.YanPl.pocketProbe;
 
-import org.bukkit.Bukkit; // Added for Bukkit.getScheduler().runTaskLater, etc.
-import org.bukkit.ChatColor; // Added for ChatColor.AQUA, ChatColor.DARK_GRAY
-import org.bukkit.Material;   // Added for Material.GRAY_STAINED_GLASS_PANE
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.inventory.meta.ItemMeta; // Added for ItemMeta
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -16,6 +16,8 @@ import org.bstats.bukkit.Metrics;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+// 确保 ProbeSession 类的导入
+import org.YanPl.pocketProbe.ProbeSession;
 
 /**
  * PocketProbe Spigot 插件的主类。
@@ -117,7 +119,7 @@ public final class PocketProbe extends JavaPlugin {
                 // 获取最新的玩家背包内容
                 PlayerInventory latestTargetInv = targetPlayer.getInventory();
 
-                // ***** 关键修复：重新构建整个探查背包的内容数组 *****
+                // ***** 核心实时更新修复：重新构建整个探查背包的内容数组，并以目标玩家背包为准 *****
                 ItemStack[] newProbeContents = new ItemStack[54];
 
                 // 填充盔甲栏 (槽位 0-3)
@@ -140,7 +142,7 @@ public final class PocketProbe extends JavaPlugin {
                     }
                 }
 
-                // 填充空槽位（灰色玻璃板），确保它们不被玩家物品覆盖，并保持界面整洁。
+                // 填充空槽位（灰色玻璃板），这些槽位不对应目标玩家的实际物品，始终保持为填充物。
                 ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
                 ItemMeta fillerMeta = filler.getItemMeta();
                 if (fillerMeta != null) {
@@ -149,16 +151,7 @@ public final class PocketProbe extends JavaPlugin {
                 }
                 int[] fillerSlots = {4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17};
                 for (int slot : fillerSlots) {
-                    // 只有当该槽位目前是空的，或者已经被填充物占据时，才重新填充
-                    // 这避免了覆盖玩家在探查界面中可能放置的物品
-                    ItemStack currentProbeItem = probeInventory.getItem(slot);
-                    // 检查 currentProbeItem 是否为 null，以防止 NPE
-                    if (currentProbeItem == null || (currentProbeItem.getType() == Material.GRAY_STAINED_GLASS_PANE && Objects.equals(currentProbeItem.getItemMeta(), fillerMeta))) {
-                        newProbeContents[slot] = filler;
-                    } else {
-                        // 如果玩家在此槽位放置了非填充物，则保留玩家放置的物品
-                        newProbeContents[slot] = currentProbeItem;
-                    }
+                    newProbeContents[slot] = filler; // 无条件填充，确保这些位置不受目标玩家背包影响。
                 }
                 // ***** 结束重新构建 *****
 
