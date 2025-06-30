@@ -6,14 +6,14 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.CraftItemEvent; // 新增导入
+import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.inventory.InventoryDragEvent; // 新增导入
-import org.bukkit.event.player.PlayerDropItemEvent; // 新增导入
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
-import org.bukkit.event.player.PlayerItemConsumeEvent; // 新增导入
-import org.bukkit.event.player.PlayerPickupItemEvent; // 新增导入
+import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -21,7 +21,7 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
-import org.jetbrains.annotations.NotNull; // 导入 @NotNull
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.Objects;
@@ -35,16 +35,19 @@ public class PocketProbeListener implements Listener {
 
     /**
      * 辅助方法：刷新所有正在探查指定目标玩家背包的探查会话。
+     * 该方法会延迟执行，以确保目标玩家的背包状态在事件处理完成后得到最终更新。
      * @param target 目标玩家，其背包发生了改变。
      */
-    private void refreshProbesForTarget(Player target) {
-        // 遍历所有打开的探查会话，找出目标玩家与传入的 target 匹配的会话。
-        for (ProbeSession session : PocketProbe.getInstance().getOpenedProbeSessions().values()) {
-            if (session.getTargetPlayer().equals(target)) {
-                // 调用主插件类的 forceRefreshProbe 方法，立即刷新该探查会话的背包显示。
-                PocketProbe.getInstance().forceRefreshProbe(session);
+    private void scheduleRefreshProbesForTarget(Player target) {
+        Bukkit.getScheduler().runTaskLater(PocketProbe.getInstance(), () -> {
+            // 遍历所有打开的探查会话，找出目标玩家与传入的 target 匹配的会话。
+            for (ProbeSession session : PocketProbe.getInstance().getOpenedProbeSessions().values()) {
+                if (session.getTargetPlayer().equals(target)) {
+                    // 调用主插件类的 forceRefreshProbe 方法，立即刷新该探查会话的背包显示。
+                    PocketProbe.getInstance().forceRefreshProbe(session);
+                }
             }
-        }
+        }, 1L); // 延迟 1 tick 执行，确保目标玩家的背包状态已完全更新。
     }
 
     /**
@@ -217,6 +220,7 @@ public class PocketProbeListener implements Listener {
                 event.setCancelled(true);
             } else {
                 // ****** 实时同步操作者在探查背包中的操作到目标玩家的实际背包 ******
+                // 这个逻辑会在操作者点击/拖动物品时立即尝试同步。
                 // 延迟执行以确保 Bukkit 自己的 InventoryClickEvent 处理完成后，再获取并同步最新状态。
                 Bukkit.getScheduler().runTaskLater(PocketProbe.getInstance(), () -> {
                     // 再次检查会话是否存在，以防在延迟执行期间背包被关闭。
@@ -251,6 +255,7 @@ public class PocketProbeListener implements Listener {
 
     // ====================================================================
     // 以下是新增的事件监听器，用于处理目标玩家自身背包的变动，并触发探查界面同步。
+    // 所有这些事件现在都将使用 scheduleRefreshProbesForTarget 延迟触发同步。
     // ====================================================================
 
     /**
@@ -264,8 +269,8 @@ public class PocketProbeListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player targetPlayer) || PocketProbe.getInstance().getOpenedProbeSessions().containsKey(event.getInventory())) {
             return;
         }
-        // 如果该玩家正在被探查，则刷新所有相关的探查界面。
-        refreshProbesForTarget(targetPlayer);
+        // 如果该玩家正在被探查，则延迟刷新所有相关的探查界面。
+        scheduleRefreshProbesForTarget(targetPlayer);
     }
 
     /**
@@ -279,8 +284,8 @@ public class PocketProbeListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player targetPlayer) || PocketProbe.getInstance().getOpenedProbeSessions().containsKey(event.getInventory())) {
             return;
         }
-        // 如果该玩家正在被探查，则刷新所有相关的探查界面。
-        refreshProbesForTarget(targetPlayer);
+        // 如果该玩家正在被探查，则延迟刷新所有相关的探查界面。
+        scheduleRefreshProbesForTarget(targetPlayer);
     }
 
     /**
@@ -290,8 +295,8 @@ public class PocketProbeListener implements Listener {
     @EventHandler
     public void onTargetPlayerPickupItem(@NotNull PlayerPickupItemEvent event) {
         Player targetPlayer = event.getPlayer();
-        // 如果该玩家正在被探查，则刷新所有相关的探查界面。
-        refreshProbesForTarget(targetPlayer);
+        // 如果该玩家正在被探查，则延迟刷新所有相关的探查界面。
+        scheduleRefreshProbesForTarget(targetPlayer);
     }
 
     /**
@@ -301,8 +306,8 @@ public class PocketProbeListener implements Listener {
     @EventHandler
     public void onTargetPlayerDropItem(@NotNull PlayerDropItemEvent event) {
         Player targetPlayer = event.getPlayer();
-        // 如果该玩家正在被探查，则刷新所有相关的探查界面。
-        refreshProbesForTarget(targetPlayer);
+        // 如果该玩家正在被探查，则延迟刷新所有相关的探查界面。
+        scheduleRefreshProbesForTarget(targetPlayer);
     }
 
     /**
@@ -312,8 +317,8 @@ public class PocketProbeListener implements Listener {
     @EventHandler
     public void onTargetPlayerItemConsume(@NotNull PlayerItemConsumeEvent event) {
         Player targetPlayer = event.getPlayer();
-        // 如果该玩家正在被探查，则刷新所有相关的探查界面。
-        refreshProbesForTarget(targetPlayer);
+        // 如果该玩家正在被探查，则延迟刷新所有相关的探查界面。
+        scheduleRefreshProbesForTarget(targetPlayer);
     }
 
     /**
@@ -326,7 +331,7 @@ public class PocketProbeListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player targetPlayer)) {
             return;
         }
-        // 如果该玩家正在被探查，则刷新所有相关的探查界面。
-        refreshProbesForTarget(targetPlayer);
+        // 如果该玩家正在被探查，则延迟刷新所有相关的探查界面。
+        scheduleRefreshProbesForTarget(targetPlayer);
     }
 }

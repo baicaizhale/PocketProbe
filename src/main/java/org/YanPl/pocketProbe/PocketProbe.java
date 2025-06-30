@@ -167,18 +167,12 @@ public final class PocketProbe extends JavaPlugin {
      * @param session 当前的探查会话，包含查看者、目标玩家和自定义背包。
      */
     public void startProbeRefreshTask(ProbeSession session) {
-        Player targetPlayer = session.getTargetPlayer();
-        Inventory probeInventory = session.getProbeInventory();
-        Player viewerPlayer = session.getViewerPlayer();
-
+        // 由于 forceRefreshProbe 已经包含了会话有效性检查和清理，这里直接调用即可。
         BukkitTask refreshTask = new BukkitRunnable() {
             @Override
             public void run() {
-                // 调用 forceRefreshProbe 方法来执行实际的刷新逻辑。
-                // forceRefreshProbe 内部会处理会话的有效性检查和清理。
                 forceRefreshProbe(session);
             }
-
         }.runTaskTimer(this, 0L, 2L); // 0L: 立即开始, 2L: 每 2 tick 执行一次 (0.1秒)
 
         // 将任务关联到会话
