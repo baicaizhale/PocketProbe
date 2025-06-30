@@ -1,43 +1,26 @@
-# 这是你的 Spigot 插件的主要配置文件。
-# 它告诉 Spigot 服务器关于你插件的基本信息。
-
-# 你插件的名称。这应该与 pom.xml 中的 artifactId 匹配。
+# 插件名称。
 name: PocketProbe
 
-# 你插件的版本。最好在每次更改后更新它。
-version: 1.4.9
+# 插件版本。
+version: 1.5.0
 
-# 你插件的主类。这是 Spigot 加载插件时的入口点。
-# 格式必须为: <包名>.<主类名>
+# 插件主类。
 main: org.YanPl.pocketProbe.PocketProbe
 
-# 你插件所基于的 API 版本。
-# 这有助于 Spigot 确保兼容性。
+# API 版本。
 api-version: 1.18
 
-# 定义你的插件将处理的命令。
+# 命令定义。
 commands:
-  # 命令名称 (例如, /pocketprobe)
   pocketprobe:
-    # 命令的简短描述。
     description: 打开另一个玩家的背包进行检查和编辑。
-    # 命令的使用方法，在用法不正确时显示。
     usage: /<command> <玩家名>
-    # 使用此命令所需的权限。
     permission: pocketprobe.use
-    # 如果玩家没有权限使用此命令，则显示此消息。
     permission-message: 你没有权限使用此命令。
-    aliases: [pp] # 添加 'pp' 作为 'pocketprobe' 的别名
+    aliases: [pp]
 
-# 定义你的插件使用的权限。
+# 权限定义。
 permissions:
-  # 特定的权限节点。
   pocketprobe.use:
-    # 为服务器管理员提供的描述。
     description: 允许玩家使用 /pocketprobe 命令查看和编辑背包。
-    # 此权限的默认访问级别：
-    # - op: 默认只有服务器操作员可以使用。
-    # - true: 默认所有人都可以使用。
-    # - false: 默认没有人可以使用。
-    # - not-op: 默认除操作员外所有人都可以使用。
     default: op
