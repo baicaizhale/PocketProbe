@@ -6,9 +6,14 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.CraftItemEvent; // 新增导入
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent; // 新增导入
+import org.bukkit.event.player.PlayerDropItemEvent; // 新增导入
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent; // 新增导入
+import org.bukkit.event.player.PlayerPickupItemEvent; // 新增导入
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -27,6 +32,20 @@ import java.util.Objects;
  * 它实现了 Listener 接口，这是 Spigot 事件监听器所必需的。
  */
 public class PocketProbeListener implements Listener {
+
+    /**
+     * 辅助方法：刷新所有正在探查指定目标玩家背包的探查会话。
+     * @param target 目标玩家，其背包发生了改变。
+     */
+    private void refreshProbesForTarget(Player target) {
+        // 遍历所有打开的探查会话，找出目标玩家与传入的 target 匹配的会话。
+        for (ProbeSession session : PocketProbe.getInstance().getOpenedProbeSessions().values()) {
+            if (session.getTargetPlayer().equals(target)) {
+                // 调用主插件类的 forceRefreshProbe 方法，立即刷新该探查会话的背包显示。
+                PocketProbe.getInstance().forceRefreshProbe(session);
+            }
+        }
+    }
 
     /**
      * 当 PlayerInteractAtEntityEvent 发生时，Spigot 会自动调用此方法。
@@ -114,7 +133,7 @@ public class PocketProbeListener implements Listener {
     }
 
     /**
-     * 处理自定义背包的关闭事件，将物品同步回目标玩家的真实背包。
+     * 处理自定义探查背包的关闭事件，将物品同步回目标玩家的真实背包。
      * 同时取消实时更新任务。
      * @param event 背包关闭事件。
      */
@@ -167,12 +186,13 @@ public class PocketProbeListener implements Listener {
     }
 
     /**
+     * 处理查看者在探查背包中的点击事件。
      * 防止玩家在探查背包中移动或拿起填充物。
      * 同时实现操作者在探查背包中的操作实时同步到目标玩家的实际背包。
      * @param event 背包点击事件。
      */
     @EventHandler
-    public void onInventoryClick(@NotNull InventoryClickEvent event) { // 修复: @NotNull 警告
+    public void onProbeInventoryClick(@NotNull InventoryClickEvent event) {
         Map<Inventory, ProbeSession> openedSessions = PocketProbe.getInstance().getOpenedProbeSessions();
         Inventory clickedInventory = event.getClickedInventory(); // 获取被点击的背包
 
@@ -196,8 +216,7 @@ public class PocketProbeListener implements Listener {
                 // 阻止玩家捡起填充物或将其他物品放入填充物槽位。
                 event.setCancelled(true);
             } else {
-                // ****** 关键修复：实时同步操作者在探查背包中的操作到目标玩家的实际背包 ******
-                // 这个逻辑会在操作者点击/拖动物品时立即尝试同步。
+                // ****** 实时同步操作者在探查背包中的操作到目标玩家的实际背包 ******
                 // 延迟执行以确保 Bukkit 自己的 InventoryClickEvent 处理完成后，再获取并同步最新状态。
                 Bukkit.getScheduler().runTaskLater(PocketProbe.getInstance(), () -> {
                     // 再次检查会话是否存在，以防在延迟执行期间背包被关闭。
@@ -206,7 +225,6 @@ public class PocketProbeListener implements Listener {
                     }
 
                     PlayerInventory targetInv = targetPlayer.getInventory();
-                    // 修复: 确保 currentItemInProbe 不为 null 且 getType() 调用的安全性
                     ItemStack currentItemInProbe = clickedInventory.getItem(slot);
 
                     // 根据槽位类型进行同步
@@ -229,5 +247,86 @@ public class PocketProbeListener implements Listener {
                 }, 1L); // 延迟 1 tick 执行，确保 Spigot 内部的点击处理完成。
             }
         }
+    }
+
+    // ====================================================================
+    // 以下是新增的事件监听器，用于处理目标玩家自身背包的变动，并触发探查界面同步。
+    // ====================================================================
+
+    /**
+     * 监听目标玩家自身背包中的点击事件。
+     * 当目标玩家在自己的背包或任何非探查背包中点击时触发。
+     * @param event 背包点击事件。
+     */
+    @EventHandler
+    public void onTargetInventoryClick(@NotNull InventoryClickEvent event) {
+        // 确保点击者是玩家，并且点击的不是探查背包（探查背包的点击由 onProbeInventoryClick 处理）。
+        if (!(event.getWhoClicked() instanceof Player targetPlayer) || PocketProbe.getInstance().getOpenedProbeSessions().containsKey(event.getInventory())) {
+            return;
+        }
+        // 如果该玩家正在被探查，则刷新所有相关的探查界面。
+        refreshProbesForTarget(targetPlayer);
+    }
+
+    /**
+     * 监听目标玩家自身背包中的拖动事件。
+     * 当目标玩家在自己的背包或任何非探查背包中拖动时触发。
+     * @param event 背包拖动事件。
+     */
+    @EventHandler
+    public void onTargetInventoryDrag(@NotNull InventoryDragEvent event) {
+        // 确保拖动者是玩家，并且拖动的不是探查背包。
+        if (!(event.getWhoClicked() instanceof Player targetPlayer) || PocketProbe.getInstance().getOpenedProbeSessions().containsKey(event.getInventory())) {
+            return;
+        }
+        // 如果该玩家正在被探查，则刷新所有相关的探查界面。
+        refreshProbesForTarget(targetPlayer);
+    }
+
+    /**
+     * 监听目标玩家拾取物品事件。
+     * @param event 玩家拾取物品事件。
+     */
+    @EventHandler
+    public void onTargetPlayerPickupItem(@NotNull PlayerPickupItemEvent event) {
+        Player targetPlayer = event.getPlayer();
+        // 如果该玩家正在被探查，则刷新所有相关的探查界面。
+        refreshProbesForTarget(targetPlayer);
+    }
+
+    /**
+     * 监听目标玩家丢弃物品事件。
+     * @param event 玩家丢弃物品事件。
+     */
+    @EventHandler
+    public void onTargetPlayerDropItem(@NotNull PlayerDropItemEvent event) {
+        Player targetPlayer = event.getPlayer();
+        // 如果该玩家正在被探查，则刷新所有相关的探查界面。
+        refreshProbesForTarget(targetPlayer);
+    }
+
+    /**
+     * 监听目标玩家消耗物品事件（例如，吃食物、喝药水）。
+     * @param event 玩家消耗物品事件。
+     */
+    @EventHandler
+    public void onTargetPlayerItemConsume(@NotNull PlayerItemConsumeEvent event) {
+        Player targetPlayer = event.getPlayer();
+        // 如果该玩家正在被探查，则刷新所有相关的探查界面。
+        refreshProbesForTarget(targetPlayer);
+    }
+
+    /**
+     * 监听目标玩家合成物品事件。
+     * @param event 合成物品事件。
+     */
+    @EventHandler
+    public void onTargetCraftItem(@NotNull CraftItemEvent event) {
+        // 获取执行合成的玩家。
+        if (!(event.getWhoClicked() instanceof Player targetPlayer)) {
+            return;
+        }
+        // 如果该玩家正在被探查，则刷新所有相关的探查界面。
+        refreshProbesForTarget(targetPlayer);
     }
 }

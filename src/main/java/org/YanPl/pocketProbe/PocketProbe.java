@@ -96,7 +96,74 @@ public final class PocketProbe extends JavaPlugin {
     }
 
     /**
-     * 启动一个 BukkitRunnable 任务，用于实时刷新探查背包的内容。
+     * 强制刷新一个探查会话的背包内容。
+     * 这个方法包含了实际更新背包界面的核心逻辑。
+     * @param session 需要刷新的探查会话。
+     */
+    public void forceRefreshProbe(ProbeSession session) {
+        Player targetPlayer = session.getTargetPlayer();
+        Inventory probeInventory = session.getProbeInventory();
+        Player viewerPlayer = session.getViewerPlayer();
+
+        // 检查目标玩家是否仍然在线，以及查看者是否仍然打开着这个探查背包。
+        // 如果条件不满足，说明会话不再有效，执行清理并返回。
+        if (!targetPlayer.isOnline() || viewerPlayer.getOpenInventory() == null || viewerPlayer.getOpenInventory().getTopInventory() != probeInventory) {
+            // 如果任务正在运行，取消它。
+            if (session.getRefreshTask() != null) {
+                session.getRefreshTask().cancel();
+            }
+            // 从会话列表中移除。
+            openedProbeSessions.remove(probeInventory);
+            return;
+        }
+
+        // 获取最新的玩家背包内容
+        PlayerInventory latestTargetInv = targetPlayer.getInventory();
+
+        // 重新构建整个探查背包的内容数组，并以目标玩家背包的最新状态为准
+        ItemStack[] newProbeContents = new ItemStack[54];
+
+        // 填充盔甲栏 (探查背包槽位 0-3)
+        newProbeContents[0] = latestTargetInv.getHelmet();
+        newProbeContents[1] = latestTargetInv.getChestplate();
+        newProbeContents[2] = latestTargetInv.getLeggings();
+        newProbeContents[3] = latestTargetInv.getBoots();
+
+        // 填充副手 (探查背包槽位 8)
+        newProbeContents[8] = latestTargetInv.getItemInOffHand();
+
+        // 填充主物品栏 (玩家背包槽位 9-35 -> 探查背包槽位 18-44)
+        // 填充热启动栏 (玩家背包槽位 0-8 -> 探查背包槽位 45-53)
+        ItemStack[] targetStorageContents = latestTargetInv.getStorageContents();
+        for (int i = 0; i < targetStorageContents.length; i++) {
+            if (i <= 8) { // 热启动栏
+                newProbeContents[45 + i] = targetStorageContents[i];
+            } else { // 主物品栏
+                newProbeContents[18 + (i - 9)] = targetStorageContents[i];
+            }
+        }
+
+        // 填充空槽位（灰色玻璃板），这些槽位不对应目标玩家的实际物品，始终保持为填充物。
+        ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemMeta fillerMeta = filler.getItemMeta();
+        if (fillerMeta != null) {
+            fillerMeta.setDisplayName(ChatColor.DARK_GRAY + " "); // 设置为空名称以隐藏物品名。
+            filler.setItemMeta(fillerMeta);
+        }
+        int[] fillerSlots = {4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17};
+        for (int slot : fillerSlots) {
+            newProbeContents[slot] = filler; // 无条件填充，确保这些位置不受目标玩家背包影响。
+        }
+
+        // 使用 setContents 强制更新整个探查背包的内容，确保客户端完全同步。
+        probeInventory.setContents(newProbeContents);
+
+        // 强制查看者刷新其客户端的背包界面，以确保最及时的显示。
+        viewerPlayer.updateInventory();
+    }
+
+    /**
+     * 启动一个 BukkitRunnable 任务，用于定期（每 2 tick）刷新探查背包的内容。
      * @param session 当前的探查会话，包含查看者、目标玩家和自定义背包。
      */
     public void startProbeRefreshTask(ProbeSession session) {
@@ -107,59 +174,9 @@ public final class PocketProbe extends JavaPlugin {
         BukkitTask refreshTask = new BukkitRunnable() {
             @Override
             public void run() {
-                // 如果目标玩家不在线，或者查看者不再查看此背包，则取消任务
-                // 添加对 viewerPlayer.getOpenInventory() 的 null 检查，以避免空指针异常
-                if (!targetPlayer.isOnline() || viewerPlayer.getOpenInventory() == null || viewerPlayer.getOpenInventory().getTopInventory() != probeInventory) {
-                    this.cancel();
-                    // 如果任务被取消，确保从 Map 中移除会话
-                    openedProbeSessions.remove(probeInventory);
-                    return;
-                }
-
-                // 获取最新的玩家背包内容
-                PlayerInventory latestTargetInv = targetPlayer.getInventory();
-
-                // ***** 核心实时更新修复：重新构建整个探查背包的内容数组，并以目标玩家背包为准 *****
-                ItemStack[] newProbeContents = new ItemStack[54];
-
-                // 填充盔甲栏 (槽位 0-3)
-                newProbeContents[0] = latestTargetInv.getHelmet();
-                newProbeContents[1] = latestTargetInv.getChestplate();
-                newProbeContents[2] = latestTargetInv.getLeggings();
-                newProbeContents[3] = latestTargetInv.getBoots();
-
-                // 填充副手 (槽位 8)
-                newProbeContents[8] = latestTargetInv.getItemInOffHand();
-
-                // 填充主物品栏 (玩家背包槽位 9-35 -> 探查背包槽位 18-44)
-                // 填充热启动栏 (玩家背包槽位 0-8 -> 探查背包槽位 45-53)
-                ItemStack[] targetStorageContents = latestTargetInv.getStorageContents();
-                for (int i = 0; i < targetStorageContents.length; i++) {
-                    if (i <= 8) { // 热启动栏
-                        newProbeContents[45 + i] = targetStorageContents[i];
-                    } else { // 主物品栏
-                        newProbeContents[18 + (i - 9)] = targetStorageContents[i];
-                    }
-                }
-
-                // 填充空槽位（灰色玻璃板），这些槽位不对应目标玩家的实际物品，始终保持为填充物。
-                ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-                ItemMeta fillerMeta = filler.getItemMeta();
-                if (fillerMeta != null) {
-                    fillerMeta.setDisplayName(ChatColor.DARK_GRAY + " "); // 设置为空名称以隐藏物品名。
-                    filler.setItemMeta(fillerMeta);
-                }
-                int[] fillerSlots = {4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17};
-                for (int slot : fillerSlots) {
-                    newProbeContents[slot] = filler; // 无条件填充，确保这些位置不受目标玩家背包影响。
-                }
-                // ***** 结束重新构建 *****
-
-                // 使用 setContents 强制更新整个探查背包的内容，确保客户端完全同步。
-                probeInventory.setContents(newProbeContents);
-
-                // 强制查看者刷新其客户端的背包界面，以确保最及时的显示。
-                viewerPlayer.updateInventory();
+                // 调用 forceRefreshProbe 方法来执行实际的刷新逻辑。
+                // forceRefreshProbe 内部会处理会话的有效性检查和清理。
+                forceRefreshProbe(session);
             }
 
         }.runTaskTimer(this, 0L, 2L); // 0L: 立即开始, 2L: 每 2 tick 执行一次 (0.1秒)
