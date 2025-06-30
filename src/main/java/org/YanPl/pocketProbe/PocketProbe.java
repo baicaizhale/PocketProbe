@@ -16,8 +16,6 @@ import org.bstats.bukkit.Metrics;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-// 确保 ProbeSession 类的导入
-import org.YanPl.pocketProbe.ProbeSession;
 
 /**
  * PocketProbe Spigot 插件的主类。
@@ -25,11 +23,9 @@ import org.YanPl.pocketProbe.ProbeSession;
  */
 public final class PocketProbe extends JavaPlugin {
 
-    // 存储当前插件的唯一实例，方便其他类访问
+    // 存储当前插件的唯一实例
     private static PocketProbe instance;
-
-    // 存储已打开的探查会话。
-    // 键: 自定义背包实例, 值: ProbeSession 对象 (包含目标玩家、查看者和刷新任务)
+    // 存储已打开的探查会话
     private final Map<Inventory, ProbeSession> openedProbeSessions = new HashMap<>();
 
     /**
@@ -145,7 +141,7 @@ public final class PocketProbe extends JavaPlugin {
             public void run() {
                 forceRefreshProbe(session);
             }
-        }.runTaskTimer(this, 0L, 2L); // 每 0.1 秒执行一次
+        }.runTaskTimer(this, 0L, 2L); // 每 0.1 秒执行一次 (2 ticks)
 
         session.setRefreshTask(refreshTask);
     }

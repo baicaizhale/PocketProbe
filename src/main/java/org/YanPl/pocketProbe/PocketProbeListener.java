@@ -42,7 +42,7 @@ public class PocketProbeListener implements Listener {
                     PocketProbe.getInstance().forceRefreshProbe(session);
                 }
             }
-        }, 0L); // 延迟 0 tick，立即运行。
+        }, 1L); // 延迟 1 tick，确保目标玩家背包状态已完全更新后再刷新探查界面。
     }
 
     /**
@@ -124,19 +124,10 @@ public class PocketProbeListener implements Listener {
             // 从会话中移除
             openedSessions.remove(closedInventory);
 
-            // ****** 核心修复：移除以下所有向目标玩家背包写回的逻辑 ******
+            // 核心修复：移除所有向目标玩家背包写回的逻辑
             // 因为操作者对探查界面的操作已经实时同步到目标玩家背包，
             // 且目标玩家的自身背包变化也会实时更新探查界面。
             // 此时，目标玩家的背包已经是最新状态，无需再次写回，以避免覆盖。
-            // targetInv.setHelmet(closedInventory.getItem(0));
-            // targetInv.setChestplate(closedInventory.getItem(1));
-            // targetInv.setLeggings(closedInventory.getItem(2));
-            // targetInv.setBoots(closedInventory.getItem(3));
-            // targetInv.setItemInOffHand(closedInventory.getItem(8));
-            // ...
-            // targetInv.setStorageContents(newStorageContents);
-            // targetPlayer.updateInventory(); // 这行也可以移除，因为目标玩家的更新由其他事件触发
-            // ****** 核心修复结束 ******
 
             event.getPlayer().sendMessage(ChatColor.GREEN + session.getTargetPlayer().getName() + " 的背包探查已关闭。");
         }
@@ -200,6 +191,7 @@ public class PocketProbeListener implements Listener {
      */
     @EventHandler
     public void onTargetInventoryClick(@NotNull InventoryClickEvent event) {
+        // 确保是目标玩家自己操作自己的背包，而不是探查界面
         if (!(event.getWhoClicked() instanceof Player targetPlayer) || PocketProbe.getInstance().getOpenedProbeSessions().containsKey(event.getInventory())) {
             return;
         }
@@ -211,6 +203,7 @@ public class PocketProbeListener implements Listener {
      */
     @EventHandler
     public void onTargetInventoryDrag(@NotNull InventoryDragEvent event) {
+        // 确保是目标玩家自己操作自己的背包，而不是探查界面
         if (!(event.getWhoClicked() instanceof Player targetPlayer) || PocketProbe.getInstance().getOpenedProbeSessions().containsKey(event.getInventory())) {
             return;
         }

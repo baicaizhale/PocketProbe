@@ -6,7 +6,7 @@
 
     <groupId>org.YanPl</groupId>
     <artifactId>pocketprobe</artifactId>
-    <version>1.5.0</version>
+    <version>1.5.1</version> <!-- 版本更新为 1.5.1 -->
     <packaging>jar</packaging>
 
     <name>pocketprobe</name>
@@ -39,6 +39,12 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <transformers>
+                                <!-- 核心修复：确保 Manifest.MF 文件正确生成，包含主类信息 -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>org.YanPl.pocketprobe.PocketProbe</mainClass>
+                                </transformer>
+                            </transformers>
                             <relocations>
                                 <relocation>
                                     <pattern>org.bstats</pattern>
@@ -52,7 +58,8 @@
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
-                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                        <!-- 重要：当使用 ManifestResourceTransformer 时，不应在此处排除 META-INF/MANIFEST.MF -->
+                                        <!-- <exclude>META-INF/MANIFEST.MF</exclude> -->
                                     </excludes>
                                 </filter>
                             </filters>
