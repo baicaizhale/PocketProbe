@@ -2,7 +2,7 @@
 name: PocketProbe
 
 # 插件版本。
-version: 1.5.2
+version: 1.5.3
 
 # 插件主类。
 main: org.YanPl.pocketProbe.PocketProbe

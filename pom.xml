@@ -6,10 +6,10 @@
 
     <groupId>org.YanPl</groupId>
     <artifactId>pocketprobe</artifactId>
-    <version>1.5.2</version> <!-- 版本更新为 1.5.1 -->
+    <version>1.5.3</version> <!-- 版本更新为 1.5.1 -->
     <packaging>jar</packaging>
 
-    <name>pocketprobe</name>
+    <name>PocketProbe</name>
 
     <properties>
         <java.version>17</java.version>
