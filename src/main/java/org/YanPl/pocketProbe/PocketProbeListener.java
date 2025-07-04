@@ -5,7 +5,9 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -13,7 +15,10 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.event.player.PlayerPickupItemEvent;
+import org.bukkit.event.player.PlayerItemBreakEvent;
+import org.bukkit.event.player.PlayerItemDamageEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -26,7 +31,7 @@ import java.util.Objects;
 
 
 /**
- * 监听玩家事件（右键点击实体、背包关闭、背包点击、拖动、拾取、丢弃、消耗、合成）。
+ * 监听玩家事件（右键点击实体、背包关闭、背包点击、拖动、拾取、丢弃、消耗、合成等）。
  */
 public class PocketProbeListener implements Listener {
 
@@ -136,7 +141,7 @@ public class PocketProbeListener implements Listener {
     /**
      * 处理查看者在探查背包中的点击事件。
      */
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onProbeInventoryClick(@NotNull InventoryClickEvent event) {
         Map<Inventory, ProbeSession> openedSessions = PocketProbe.getInstance().getOpenedProbeSessions();
         Inventory clickedInventory = event.getClickedInventory();
@@ -189,62 +194,224 @@ public class PocketProbeListener implements Listener {
     /**
      * 监听目标玩家自身背包中的点击事件。
      */
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onTargetInventoryClick(@NotNull InventoryClickEvent event) {
         // 确保是目标玩家自己操作自己的背包，而不是探查界面
-        if (!(event.getWhoClicked() instanceof Player targetPlayer) || PocketProbe.getInstance().getOpenedProbeSessions().containsKey(event.getInventory())) {
+        if (!(event.getWhoClicked() instanceof Player targetPlayer) ||
+                PocketProbe.getInstance().getOpenedProbeSessions().containsKey(event.getInventory())) {
             return;
         }
-        immediateRefreshProbesForTarget(targetPlayer);
+
+        // 检查是否有人在探查这个玩家的背包
+        boolean isBeingProbed = false;
+        for (ProbeSession session : PocketProbe.getInstance().getOpenedProbeSessions().values()) {
+            if (session.getTargetPlayer().equals(targetPlayer)) {
+                isBeingProbed = true;
+                break;
+            }
+        }
+
+        if (isBeingProbed) {
+            immediateRefreshProbesForTarget(targetPlayer);
+        }
     }
 
     /**
      * 监听目标玩家自身背包中的拖动事件。
      */
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onTargetInventoryDrag(@NotNull InventoryDragEvent event) {
         // 确保是目标玩家自己操作自己的背包，而不是探查界面
-        if (!(event.getWhoClicked() instanceof Player targetPlayer) || PocketProbe.getInstance().getOpenedProbeSessions().containsKey(event.getInventory())) {
+        if (!(event.getWhoClicked() instanceof Player targetPlayer) ||
+                PocketProbe.getInstance().getOpenedProbeSessions().containsKey(event.getInventory())) {
             return;
         }
-        immediateRefreshProbesForTarget(targetPlayer);
+
+        // 检查是否有人在探查这个玩家的背包
+        boolean isBeingProbed = false;
+        for (ProbeSession session : PocketProbe.getInstance().getOpenedProbeSessions().values()) {
+            if (session.getTargetPlayer().equals(targetPlayer)) {
+                isBeingProbed = true;
+                break;
+            }
+        }
+
+        if (isBeingProbed) {
+            immediateRefreshProbesForTarget(targetPlayer);
+        }
     }
 
     /**
-     * 监听目标玩家拾取物品事件。
+     * 监听目标玩家拾取物品事件 (使用新的EntityPickupItemEvent)。
      */
-    @EventHandler
-    public void onTargetPlayerPickupItem(@NotNull PlayerPickupItemEvent event) {
-        Player targetPlayer = event.getPlayer();
-        immediateRefreshProbesForTarget(targetPlayer);
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onTargetPlayerPickupItem(@NotNull EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player targetPlayer)) {
+            return;
+        }
+
+        // 检查是否有人在探查这个玩家的背包
+        boolean isBeingProbed = false;
+        for (ProbeSession session : PocketProbe.getInstance().getOpenedProbeSessions().values()) {
+            if (session.getTargetPlayer().equals(targetPlayer)) {
+                isBeingProbed = true;
+                break;
+            }
+        }
+
+        if (isBeingProbed) {
+            immediateRefreshProbesForTarget(targetPlayer);
+        }
     }
 
     /**
      * 监听目标玩家丢弃物品事件。
      */
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onTargetPlayerDropItem(@NotNull PlayerDropItemEvent event) {
         Player targetPlayer = event.getPlayer();
-        immediateRefreshProbesForTarget(targetPlayer);
+
+        // 检查是否有人在探查这个玩家的背包
+        boolean isBeingProbed = false;
+        for (ProbeSession session : PocketProbe.getInstance().getOpenedProbeSessions().values()) {
+            if (session.getTargetPlayer().equals(targetPlayer)) {
+                isBeingProbed = true;
+                break;
+            }
+        }
+
+        if (isBeingProbed) {
+            immediateRefreshProbesForTarget(targetPlayer);
+        }
     }
 
     /**
      * 监听目标玩家消耗物品事件。
      */
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onTargetPlayerItemConsume(@NotNull PlayerItemConsumeEvent event) {
         Player targetPlayer = event.getPlayer();
-        immediateRefreshProbesForTarget(targetPlayer);
+
+        // 检查是否有人在探查这个玩家的背包
+        boolean isBeingProbed = false;
+        for (ProbeSession session : PocketProbe.getInstance().getOpenedProbeSessions().values()) {
+            if (session.getTargetPlayer().equals(targetPlayer)) {
+                isBeingProbed = true;
+                break;
+            }
+        }
+
+        if (isBeingProbed) {
+            immediateRefreshProbesForTarget(targetPlayer);
+        }
     }
 
     /**
      * 监听目标玩家合成物品事件。
      */
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onTargetCraftItem(@NotNull CraftItemEvent event) {
         if (!(event.getWhoClicked() instanceof Player targetPlayer)) {
             return;
         }
-        immediateRefreshProbesForTarget(targetPlayer);
+
+        // 检查是否有人在探查这个玩家的背包
+        boolean isBeingProbed = false;
+        for (ProbeSession session : PocketProbe.getInstance().getOpenedProbeSessions().values()) {
+            if (session.getTargetPlayer().equals(targetPlayer)) {
+                isBeingProbed = true;
+                break;
+            }
+        }
+
+        if (isBeingProbed) {
+            immediateRefreshProbesForTarget(targetPlayer);
+        }
+    }
+
+    /**
+     * 监听目标玩家物品损坏事件。
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onTargetPlayerItemBreak(@NotNull PlayerItemBreakEvent event) {
+        Player targetPlayer = event.getPlayer();
+
+        // 检查是否有人在探查这个玩家的背包
+        boolean isBeingProbed = false;
+        for (ProbeSession session : PocketProbe.getInstance().getOpenedProbeSessions().values()) {
+            if (session.getTargetPlayer().equals(targetPlayer)) {
+                isBeingProbed = true;
+                break;
+            }
+        }
+
+        if (isBeingProbed) {
+            immediateRefreshProbesForTarget(targetPlayer);
+        }
+    }
+
+    /**
+     * 监听目标玩家物品受损事件。
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onTargetPlayerItemDamage(@NotNull PlayerItemDamageEvent event) {
+        Player targetPlayer = event.getPlayer();
+
+        // 检查是否有人在探查这个玩家的背包
+        boolean isBeingProbed = false;
+        for (ProbeSession session : PocketProbe.getInstance().getOpenedProbeSessions().values()) {
+            if (session.getTargetPlayer().equals(targetPlayer)) {
+                isBeingProbed = true;
+                break;
+            }
+        }
+
+        if (isBeingProbed) {
+            immediateRefreshProbesForTarget(targetPlayer);
+        }
+    }
+
+    /**
+     * 监听目标玩家交换主副手物品事件。
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onTargetPlayerSwapHandItems(@NotNull PlayerSwapHandItemsEvent event) {
+        Player targetPlayer = event.getPlayer();
+
+        // 检查是否有人在探查这个玩家的背包
+        boolean isBeingProbed = false;
+        for (ProbeSession session : PocketProbe.getInstance().getOpenedProbeSessions().values()) {
+            if (session.getTargetPlayer().equals(targetPlayer)) {
+                isBeingProbed = true;
+                break;
+            }
+        }
+
+        if (isBeingProbed) {
+            immediateRefreshProbesForTarget(targetPlayer);
+        }
+    }
+
+    /**
+     * 监听目标玩家切换手持物品事件。
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onTargetPlayerItemHeld(@NotNull PlayerItemHeldEvent event) {
+        Player targetPlayer = event.getPlayer();
+
+        // 检查是否有人在探查这个玩家的背包
+        boolean isBeingProbed = false;
+        for (ProbeSession session : PocketProbe.getInstance().getOpenedProbeSessions().values()) {
+            if (session.getTargetPlayer().equals(targetPlayer)) {
+                isBeingProbed = true;
+                break;
+            }
+        }
+
+        if (isBeingProbed) {
+            // 切换手持物品不会改变背包内容，但会改变显示的选中槽位
+            // 我们可以选择是否需要刷新，这里先保留以防万一
+            immediateRefreshProbesForTarget(targetPlayer);
+        }
     }
 }
